@@ -1,0 +1,35 @@
+{
+  "act_1": {
+    "easy": [
+      {"id": "jaw_worm", "enemies": ["jaw_worm"]},
+      {"id": "cultist", "enemies": ["cultist"]},
+      {"id": "2_louse", "enemies": ["red_louse", "green_louse"]},
+      {"id": "small_slimes", "enemies": ["spike_slime_s", "acid_slime_s", "acid_slime_s"]}
+    ],
+    "normal": [
+      {"id": "fungi_beast", "enemies": ["fungi_beast"]},
+      {"id": "looter", "enemies": ["looter"]},
+      {"id": "gremlin_gang", "enemies": ["mad_gremlin", "mad_gremlin", "sneaky_gremlin", "fat_gremlin"],
+       "notes": "Actual game picks 4 random from pool; simplified to fixed composition"},
+      {"id": "large_acid_slime", "enemies": ["acid_slime_l"]},
+      {"id": "large_spike_slime", "enemies": ["spike_slime_l"]},
+      {"id": "blue_slaver", "enemies": ["blue_slaver"]},
+      {"id": "red_slaver", "enemies": ["red_slaver"]},
+      {"id": "3_louse", "enemies": ["red_louse", "red_louse", "green_louse"]},
+      {"id": "2_fungi_beast", "enemies": ["fungi_beast", "fungi_beast"]},
+      {"id": "exordium_thugs", "enemies": ["blue_slaver", "red_slaver"]},
+      {"id": "exordium_wildlife", "enemies": ["fungi_beast", "spike_slime_m", "acid_slime_m"]},
+      {"id": "lots_of_slimes", "enemies": ["spike_slime_s", "spike_slime_s", "acid_slime_m"]}
+    ],
+    "elite": [
+      {"id": "gremlin_nob", "enemies": ["gremlin_nob"]},
+      {"id": "lagavulin", "enemies": ["lagavulin"]},
+      {"id": "3_sentries", "enemies": ["sentry", "sentry", "sentry"]}
+    ],
+    "boss": [
+      {"id": "the_guardian", "enemies": ["the_guardian"]},
+      {"id": "hexaghost", "enemies": ["hexaghost"]},
+      {"id": "slime_boss", "enemies": ["slime_boss"]}
+    ]
+  }
+}

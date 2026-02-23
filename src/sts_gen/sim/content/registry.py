@@ -26,6 +26,7 @@ from sts_gen.ir.content_set import ContentSet
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]  # src/sts_gen/sim/content -> root
 _DEFAULT_CARDS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "ironclad_cards.json"
 _DEFAULT_ENEMIES_PATH = _PROJECT_ROOT / "data" / "vanilla" / "enemies.json"
+_DEFAULT_ENCOUNTERS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "encounters.json"
 
 
 def _parse_action_node(raw: dict[str, Any]) -> ActionNode:
@@ -53,6 +54,8 @@ def _parse_card_definition(raw: dict[str, Any]) -> CardDefinition:
             cost=raw_upgrade.get("cost"),
             actions=upgrade_actions,
             description=raw_upgrade.get("description"),
+            exhaust=raw_upgrade.get("exhaust"),
+            innate=raw_upgrade.get("innate"),
         )
 
     return CardDefinition(
@@ -70,6 +73,7 @@ def _parse_card_definition(raw: dict[str, Any]) -> CardDefinition:
         ethereal=raw.get("ethereal", False),
         innate=raw.get("innate", False),
         retain=raw.get("retain", False),
+        play_restriction=raw.get("play_restriction"),
     )
 
 
@@ -94,6 +98,7 @@ class ContentRegistry:
     def __init__(self) -> None:
         self.cards: dict[str, CardDefinition] = {}
         self.enemies: dict[str, dict[str, Any]] = {}
+        self.encounters: dict[str, dict[str, Any]] = {}
 
     # ------------------------------------------------------------------
     # Vanilla content loading
@@ -116,6 +121,8 @@ class ContentRegistry:
             raw_cards: list[dict[str, Any]] = json.load(f)
 
         for raw in raw_cards:
+            if "_section" in raw:
+                continue  # Skip organizational section markers
             card = _parse_card_definition(raw)
             self.cards[card.id] = card
 
@@ -136,7 +143,25 @@ class ContentRegistry:
             raw_enemies: list[dict[str, Any]] = json.load(f)
 
         for raw in raw_enemies:
+            if "_section" in raw:
+                continue  # Skip organizational section markers
             self.enemies[raw["id"]] = raw
+
+    def load_vanilla_encounters(self, path: str | Path | None = None) -> None:
+        """Load vanilla encounter definitions from a JSON file.
+
+        Parameters
+        ----------
+        path:
+            Path to the JSON file.  Defaults to
+            ``data/vanilla/encounters.json`` relative to the project root.
+        """
+        if path is None:
+            path = _DEFAULT_ENCOUNTERS_PATH
+        path = Path(path)
+
+        with open(path) as f:
+            self.encounters = json.load(f)
 
     # ------------------------------------------------------------------
     # Custom content loading
@@ -255,6 +280,44 @@ class ContentRegistry:
         return list(self.enemies.keys())
 
     # ------------------------------------------------------------------
+    # Encounter queries
+    # ------------------------------------------------------------------
+
+    def get_encounter(
+        self, act: str = "act_1", pool: str = "easy", encounter_id: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Return an encounter definition.
+
+        Parameters
+        ----------
+        act:
+            The act key (e.g. ``"act_1"``).
+        pool:
+            The encounter pool (``"easy"``, ``"normal"``, ``"elite"``, ``"boss"``).
+        encounter_id:
+            Specific encounter id.  If ``None``, returns the first encounter.
+
+        Returns
+        -------
+        dict | None
+            The encounter definition, or ``None`` if not found.
+        """
+        act_data = self.encounters.get(act, {})
+        pool_data = act_data.get(pool, [])
+        if encounter_id:
+            for enc in pool_data:
+                if enc.get("id") == encounter_id:
+                    return enc
+            return None
+        return pool_data[0] if pool_data else None
+
+    def get_encounter_pool(
+        self, act: str = "act_1", pool: str = "easy",
+    ) -> list[dict[str, Any]]:
+        """Return all encounters in a pool."""
+        return self.encounters.get(act, {}).get(pool, [])
+
+    # ------------------------------------------------------------------
     # Starter deck
     # ------------------------------------------------------------------
 
@@ -353,7 +416,13 @@ class ContentRegistry:
     # ------------------------------------------------------------------
 
     def __repr__(self) -> str:
+        n_encounters = sum(
+            len(pool)
+            for act in self.encounters.values()
+            for pool in act.values()
+        ) if self.encounters else 0
         return (
             f"ContentRegistry(cards={len(self.cards)}, "
-            f"enemies={len(self.enemies)})"
+            f"enemies={len(self.enemies)}, "
+            f"encounters={n_encounters})"
         )

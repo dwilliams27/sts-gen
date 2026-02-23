@@ -16,7 +16,7 @@ def test_load_all():
     # --- Cards ---
     print("=== CARDS ===")
     card_ids = registry.list_card_ids()
-    assert len(card_ids) == 22, f"Expected 22 cards, got {len(card_ids)}"
+    assert len(card_ids) == 80, f"Expected 80 cards, got {len(card_ids)}"
 
     for card_id in card_ids:
         card = registry.get_card(card_id)
@@ -49,7 +49,7 @@ def test_load_all():
     # --- Enemies ---
     print("=== ENEMIES ===")
     enemy_ids = registry.list_enemy_ids()
-    assert len(enemy_ids) == 3, f"Expected 3 enemies, got {len(enemy_ids)}"
+    assert len(enemy_ids) == 25, f"Expected 25 enemies, got {len(enemy_ids)}"
 
     for eid in enemy_ids:
         e = registry.get_enemy_data(eid)

@@ -19,11 +19,14 @@ if TYPE_CHECKING:
     from sts_gen.sim.core.entities import Entity
 
 # Built-in statuses that decay by 1 stack at end of turn.
-_BUILTIN_DECAY_STATUSES = frozenset({"vulnerable", "weak", "frail"})
+_BUILTIN_DECAY_STATUSES = frozenset({"vulnerable", "weak", "frail", "entangled"})
 
 # Built-in statuses that are permanent (no decay) -- strength, dexterity,
 # Metallicize, Ritual.  They persist until explicitly removed or modified.
-_BUILTIN_PERMANENT_STATUSES = frozenset({"strength", "dexterity", "Metallicize", "Ritual"})
+_BUILTIN_PERMANENT_STATUSES = frozenset({
+    "strength", "dexterity", "Metallicize", "Ritual",
+    "Enrage", "Angry", "Thievery", "Sharp Hide", "Artifact",
+})
 
 
 def apply_status(entity: Entity, status_id: str, stacks: int) -> None:

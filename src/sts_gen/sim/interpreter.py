@@ -198,10 +198,24 @@ class ActionInterpreter:
         self.execute_actions(actions, battle, source="player", chosen_target=chosen_target)
 
         # 5. Dispose of the card
-        if card_def.exhaust or "exhaust" in card_def.keywords:
-            exhaust_card(battle, card_instance)
-        else:
-            discard_card(battle, card_instance)
+        # The card may have already been moved from hand by its own actions
+        # (e.g. Fiend Fire's exhaust-all). Only dispose if still in hand.
+        still_in_hand = any(
+            c.id == card_instance.id for c in battle.card_piles.hand
+        )
+        if still_in_hand:
+            effective_exhaust = card_def.exhaust
+            if (
+                card_instance.upgraded
+                and card_def.upgrade is not None
+                and card_def.upgrade.exhaust is not None
+            ):
+                effective_exhaust = card_def.upgrade.exhaust
+
+            if effective_exhaust or "exhaust" in card_def.keywords:
+                exhaust_card(battle, card_instance)
+            else:
+                discard_card(battle, card_instance)
 
         # Reset X-cost context
         self._x_cost_value = 0
@@ -271,6 +285,17 @@ class ActionInterpreter:
                 bonus_per = 0
             strike_count = self._count_strikes_in_deck(battle)
             base_damage += bonus_per * strike_count
+        elif condition.startswith("plus_per_exhaust_"):
+            # +N damage per card in exhaust pile
+            try:
+                bonus_per = int(condition.rsplit("_", 1)[1])
+            except (ValueError, IndexError):
+                bonus_per = 0
+            exhaust_count = len(battle.card_piles.exhaust)
+            base_damage += bonus_per * exhaust_count
+        elif condition == "times_from_x_cost":
+            # Use X-cost value as hit count (Whirlwind)
+            hits = self._x_cost_value
 
         source_idx: int | str = source
         for target_idx in targets:
@@ -385,6 +410,24 @@ class ActionInterpreter:
         # Same limitation as discard: exhaust random cards from hand.
         n = self._effective_value(node)
         hand = battle.card_piles.hand
+        condition = node.condition or ""
+
+        if n == -1 and condition == "non_attack":
+            # Sever Soul: exhaust all non-Attack cards from hand
+            from sts_gen.ir.cards import CardType
+            to_exhaust = [
+                c for c in list(hand)
+                if (cd := self._card_registry.get(c.card_id)) is not None
+                and cd.type != CardType.ATTACK
+            ]
+            for card in to_exhaust:
+                if card in hand:
+                    exhaust_card(battle, card)
+            return
+
+        if n == -1:
+            # Exhaust entire hand (Fiend Fire)
+            n = len(hand)
         for _ in range(min(n, len(hand))):
             if not hand:
                 break
@@ -627,10 +670,16 @@ class ActionInterpreter:
         source: str,
         chosen_target: int | None,
     ) -> None:
-        """Execute children ``node.times`` times."""
+        """Execute children ``node.times`` times.
+
+        If ``times`` is 0 or None and an X-cost value is available,
+        use the X-cost value as the repeat count (Whirlwind pattern).
+        """
         if not node.children:
             return
         times = node.times if node.times and node.times > 0 else 0
+        if times == 0 and self._x_cost_value > 0:
+            times = self._x_cost_value
         for _ in range(times):
             if battle.is_over:
                 break
@@ -651,6 +700,102 @@ class ActionInterpreter:
             node.condition,
             node.value,
         )
+
+    def _handle_double_block(
+        self,
+        node: ActionNode,
+        battle: BattleState,
+        source: str,
+        chosen_target: int | None,
+    ) -> None:
+        """Double the source entity's current block (Entrench)."""
+        source_entity = self._resolve_source_entity(battle, source)
+        source_entity.block *= 2
+
+    def _handle_multiply_status(
+        self,
+        node: ActionNode,
+        battle: BattleState,
+        source: str,
+        chosen_target: int | None,
+    ) -> None:
+        """Multiply a status's stacks by a factor (Limit Break).
+
+        Uses ``status_name`` for which status and ``value`` as the multiplier.
+        """
+        status_id = node.status_name
+        if status_id is None:
+            logger.warning("MULTIPLY_STATUS node missing status_name")
+            return
+        multiplier = node.value if node.value is not None else 2
+        source_entity = self._resolve_source_entity(battle, source)
+        current = source_entity.status_effects.get(status_id, 0)
+        if current > 0:
+            new_stacks = current * multiplier
+            source_entity.status_effects[status_id] = new_stacks
+
+    def _handle_play_top_card(
+        self,
+        node: ActionNode,
+        battle: BattleState,
+        source: str,
+        chosen_target: int | None,
+    ) -> None:
+        """Play the top card of the draw pile, optionally exhausting it (Havoc).
+
+        ``pile`` selects which pile (default "draw").
+        ``condition`` of "exhaust" means exhaust after play instead of discard.
+        """
+        pile_name = (node.pile or "draw").lower()
+        if pile_name == "draw":
+            pile = battle.card_piles.draw
+        elif pile_name == "discard":
+            pile = battle.card_piles.discard
+        else:
+            logger.warning("PLAY_TOP_CARD: unknown pile %r", pile_name)
+            return
+
+        if not pile:
+            return
+
+        card_instance = pile.pop(0)
+        card_def = self._card_registry.get(card_instance.card_id)
+        if card_def is None:
+            logger.warning(
+                "PLAY_TOP_CARD: card %r not in registry", card_instance.card_id,
+            )
+            return
+
+        # Determine actions
+        if (
+            card_instance.upgraded
+            and card_def.upgrade is not None
+            and card_def.upgrade.actions is not None
+        ):
+            actions = card_def.upgrade.actions
+        else:
+            actions = card_def.actions
+
+        # Pick a target for the card
+        play_target = chosen_target
+        if card_def.target == CardTarget.ENEMY and play_target is None:
+            living = [i for i, e in enumerate(battle.enemies) if not e.is_dead]
+            if living:
+                play_target = battle.rng.random_choice(living)
+
+        # Execute the card's actions (free — no energy cost)
+        self.execute_actions(actions, battle, source=source, chosen_target=play_target)
+
+        # Dispose: exhaust or discard
+        should_exhaust = (
+            (node.condition or "").lower() == "exhaust"
+            or card_def.exhaust
+            or "exhaust" in card_def.keywords
+        )
+        if should_exhaust:
+            battle.card_piles.exhaust.append(card_instance)
+        else:
+            battle.card_piles.discard.append(card_instance)
 
     # ------------------------------------------------------------------
     # Deck helpers
@@ -740,6 +885,27 @@ class ActionInterpreter:
                 return False
             return len(battle.card_piles.hand) >= n
 
+        # only_attacks_in_hand — Clash: every card in hand must be Attack type
+        if condition == "only_attacks_in_hand":
+            hand = battle.card_piles.hand
+            if not hand:
+                return False
+            for card_inst in hand:
+                card_def = self._card_registry.get(card_inst.card_id)
+                if card_def is None:
+                    return False
+                from sts_gen.ir.cards import CardType
+                if card_def.type != CardType.ATTACK:
+                    return False
+            return True
+
+        # enemy_intends_attack — Spot Weakness: chosen target intends an attack
+        if condition == "enemy_intends_attack":
+            if chosen_target is not None and 0 <= chosen_target < len(battle.enemies):
+                enemy = battle.enemies[chosen_target]
+                return enemy.intent_damage is not None and enemy.intent_damage > 0
+            return False
+
         logger.warning("Unknown condition %r, evaluating to False", condition)
         return False
 
@@ -769,4 +935,7 @@ _DISPATCH: dict[ActionType, callable] = {
     ActionType.FOR_EACH: ActionInterpreter._handle_for_each,
     ActionType.REPEAT: ActionInterpreter._handle_repeat,
     ActionType.TRIGGER_CUSTOM: ActionInterpreter._handle_trigger_custom,
+    ActionType.DOUBLE_BLOCK: ActionInterpreter._handle_double_block,
+    ActionType.MULTIPLY_STATUS: ActionInterpreter._handle_multiply_status,
+    ActionType.PLAY_TOP_CARD: ActionInterpreter._handle_play_top_card,
 }

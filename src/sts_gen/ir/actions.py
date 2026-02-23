@@ -31,6 +31,9 @@ class ActionType(str, Enum):
     FOR_EACH = "for_each"
     REPEAT = "repeat"
     TRIGGER_CUSTOM = "trigger_custom"
+    DOUBLE_BLOCK = "double_block"
+    MULTIPLY_STATUS = "multiply_status"
+    PLAY_TOP_CARD = "play_top_card"
 
 
 class ActionNode(BaseModel):

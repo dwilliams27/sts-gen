@@ -1,4 +1,6 @@
 [
+  {"_section": "=== BASIC (3) ==="},
+
   {
     "id": "strike",
     "name": "Strike",
@@ -55,6 +57,9 @@
       "description": "Deal 10 damage. Apply 3 Vulnerable."
     }
   },
+
+  {"_section": "=== COMMON ATTACKS (14) ==="},
+
   {
     "id": "anger",
     "name": "Anger",
@@ -76,6 +81,41 @@
     }
   },
   {
+    "id": "body_slam",
+    "name": "Body Slam",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal damage equal to your current Block.",
+    "actions": [
+      {"action_type": "deal_damage", "value": -1, "target": "enemy", "condition": "use_block_as_damage"}
+    ],
+    "upgrade": {
+      "cost": 0,
+      "description": "Deal damage equal to your current Block."
+    }
+  },
+  {
+    "id": "clash",
+    "name": "Clash",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 0,
+    "target": "ENEMY",
+    "description": "Can only be played if every card in your hand is an Attack. Deal 14 damage.",
+    "play_restriction": "only_attacks_in_hand",
+    "actions": [
+      {"action_type": "deal_damage", "value": 14, "target": "enemy"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 18, "target": "enemy"}
+      ],
+      "description": "Can only be played if every card in your hand is an Attack. Deal 18 damage."
+    }
+  },
+  {
     "id": "cleave",
     "name": "Cleave",
     "type": "ATTACK",
@@ -91,6 +131,26 @@
         {"action_type": "deal_damage", "value": 11, "target": "all_enemies"}
       ],
       "description": "Deal 11 damage to ALL enemies."
+    }
+  },
+  {
+    "id": "clothesline",
+    "name": "Clothesline",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Deal 12 damage. Apply 2 Weak.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 12, "target": "enemy"},
+      {"action_type": "apply_status", "value": 2, "target": "enemy", "status_name": "Weak"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 14, "target": "enemy"},
+        {"action_type": "apply_status", "value": 3, "target": "enemy", "status_name": "Weak"}
+      ],
+      "description": "Deal 14 damage. Apply 3 Weak."
     }
   },
   {
@@ -114,6 +174,24 @@
     }
   },
   {
+    "id": "heavy_blade",
+    "name": "Heavy Blade",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Deal 14 damage. Strength affects this card 3 times.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 14, "target": "enemy", "condition": "strength_multiplier_3"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 14, "target": "enemy", "condition": "strength_multiplier_5"}
+      ],
+      "description": "Deal 14 damage. Strength affects this card 5 times."
+    }
+  },
+  {
     "id": "iron_wave",
     "name": "Iron Wave",
     "type": "ATTACK",
@@ -131,6 +209,24 @@
         {"action_type": "deal_damage", "value": 7, "target": "enemy"}
       ],
       "description": "Gain 7 Block. Deal 7 damage."
+    }
+  },
+  {
+    "id": "perfected_strike",
+    "name": "Perfected Strike",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Deal 6 damage. Deals 2 additional damage for each \"Strike\" card in your deck.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 6, "target": "enemy", "condition": "plus_per_strike_2"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 6, "target": "enemy", "condition": "plus_per_strike_3"}
+      ],
+      "description": "Deal 6 damage. Deals 3 additional damage for each \"Strike\" card in your deck."
     }
   },
   {
@@ -237,6 +333,63 @@
       "description": "Deal 17 damage. Shuffle a Wound into your draw pile."
     }
   },
+
+  {"_section": "=== COMMON SKILLS (6) ==="},
+
+  {
+    "id": "armaments",
+    "name": "Armaments",
+    "type": "SKILL",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Gain 5 Block. Upgrade a card in your hand for the rest of combat. [SIMPLIFIED: upgrade not modeled]",
+    "actions": [
+      {"action_type": "gain_block", "value": 5, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 5, "target": "self"}
+      ],
+      "description": "Gain 5 Block. Upgrade ALL cards in your hand for the rest of combat. [SIMPLIFIED: upgrade not modeled]"
+    }
+  },
+  {
+    "id": "flex",
+    "name": "Flex",
+    "type": "SKILL",
+    "rarity": "COMMON",
+    "cost": 0,
+    "target": "SELF",
+    "description": "Gain 2 Strength. At the end of this turn, lose 2 Strength.",
+    "actions": [
+      {"action_type": "gain_strength", "value": 2, "target": "self"},
+      {"action_type": "apply_status", "value": 2, "target": "self", "status_name": "strength_down"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_strength", "value": 4, "target": "self"},
+        {"action_type": "apply_status", "value": 4, "target": "self", "status_name": "strength_down"}
+      ],
+      "description": "Gain 4 Strength. At the end of this turn, lose 4 Strength."
+    }
+  },
+  {
+    "id": "havoc",
+    "name": "Havoc",
+    "type": "SKILL",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "NONE",
+    "description": "Play the top card of your draw pile and Exhaust it.",
+    "actions": [
+      {"action_type": "play_top_card", "condition": "exhaust"}
+    ],
+    "upgrade": {
+      "cost": 0,
+      "description": "Play the top card of your draw pile and Exhaust it."
+    }
+  },
   {
     "id": "shrug_it_off",
     "name": "Shrug It Off",
@@ -272,9 +425,9 @@
     "upgrade": {
       "actions": [
         {"action_type": "gain_block", "value": 9, "target": "self"},
-        {"action_type": "exhaust_cards", "value": 1, "target": "self", "condition": "random"}
+        {"action_type": "exhaust_cards", "value": 1, "target": "self"}
       ],
-      "description": "Gain 9 Block. Exhaust a random card from your hand."
+      "description": "Gain 9 Block. Exhaust a card from your hand."
     }
   },
   {
@@ -298,76 +451,650 @@
       "description": "Draw 2 cards. Put a card from your hand on top of your draw pile. Exhaust."
     }
   },
+
+  {"_section": "=== UNCOMMON ATTACKS (10) ==="},
+
   {
-    "id": "body_slam",
-    "name": "Body Slam",
+    "id": "blood_for_blood",
+    "name": "Blood for Blood",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 4,
+    "target": "ENEMY",
+    "description": "Costs 1 less Energy for each time you lose HP this combat. Deal 18 damage. [SIMPLIFIED: cost reduction not modeled]",
+    "actions": [
+      {"action_type": "deal_damage", "value": 18, "target": "enemy"}
+    ],
+    "upgrade": {
+      "cost": 3,
+      "actions": [
+        {"action_type": "deal_damage", "value": 22, "target": "enemy"}
+      ],
+      "description": "Costs 1 less Energy for each time you lose HP this combat. Deal 22 damage. [SIMPLIFIED: cost reduction not modeled]"
+    }
+  },
+  {
+    "id": "carnage",
+    "name": "Carnage",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Ethereal. Deal 20 damage.",
+    "ethereal": true,
+    "actions": [
+      {"action_type": "deal_damage", "value": 20, "target": "enemy"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 28, "target": "enemy"}
+      ],
+      "description": "Ethereal. Deal 28 damage."
+    }
+  },
+  {
+    "id": "dropkick",
+    "name": "Dropkick",
     "type": "ATTACK",
     "rarity": "UNCOMMON",
     "cost": 1,
     "target": "ENEMY",
-    "description": "Deal damage equal to your current Block.",
+    "description": "Deal 5 damage. If the enemy has Vulnerable, gain 1 Energy and draw 1 card.",
     "actions": [
-      {"action_type": "deal_damage", "value": -1, "target": "enemy", "condition": "use_block_as_damage"}
+      {"action_type": "deal_damage", "value": 5, "target": "enemy"},
+      {"action_type": "conditional", "condition": "target_has_status:Vulnerable", "children": [
+        {"action_type": "gain_energy", "value": 1},
+        {"action_type": "draw_cards", "value": 1}
+      ]}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 8, "target": "enemy"},
+        {"action_type": "conditional", "condition": "target_has_status:Vulnerable", "children": [
+          {"action_type": "gain_energy", "value": 1},
+          {"action_type": "draw_cards", "value": 1}
+        ]}
+      ],
+      "description": "Deal 8 damage. If the enemy has Vulnerable, gain 1 Energy and draw 1 card."
+    }
+  },
+  {
+    "id": "hemokinesis",
+    "name": "Hemokinesis",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Lose 2 HP. Deal 15 damage.",
+    "actions": [
+      {"action_type": "lose_hp", "value": 2, "target": "self"},
+      {"action_type": "deal_damage", "value": 15, "target": "enemy"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "lose_hp", "value": 2, "target": "self"},
+        {"action_type": "deal_damage", "value": 20, "target": "enemy"}
+      ],
+      "description": "Lose 2 HP. Deal 20 damage."
+    }
+  },
+  {
+    "id": "pummel",
+    "name": "Pummel",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal 2 damage 4 times. Exhaust.",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "repeat", "times": 4, "children": [
+        {"action_type": "deal_damage", "value": 2, "target": "enemy"}
+      ]}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "repeat", "times": 5, "children": [
+          {"action_type": "deal_damage", "value": 2, "target": "enemy"}
+        ]}
+      ],
+      "description": "Deal 2 damage 5 times. Exhaust."
+    }
+  },
+  {
+    "id": "rampage",
+    "name": "Rampage",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal 8 damage. Damage increases by 5 each time this card is played this combat. [SIMPLIFIED: scaling not modeled]",
+    "actions": [
+      {"action_type": "deal_damage", "value": 8, "target": "enemy"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 8, "target": "enemy"}
+      ],
+      "description": "Deal 8 damage. Damage increases by 8 each time this card is played this combat. [SIMPLIFIED: scaling not modeled]"
+    }
+  },
+  {
+    "id": "reckless_charge",
+    "name": "Reckless Charge",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 0,
+    "target": "ENEMY",
+    "description": "Deal 7 damage. Shuffle a Dazed into your draw pile.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 7, "target": "enemy"},
+      {"action_type": "shuffle_into_draw", "card_id": "dazed"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 10, "target": "enemy"},
+        {"action_type": "shuffle_into_draw", "card_id": "dazed"}
+      ],
+      "description": "Deal 10 damage. Shuffle a Dazed into your draw pile."
+    }
+  },
+  {
+    "id": "searing_blow",
+    "name": "Searing Blow",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Deal 12 damage. Can be upgraded any number of times. [SIMPLIFIED: single upgrade tier]",
+    "actions": [
+      {"action_type": "deal_damage", "value": 12, "target": "enemy"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 16, "target": "enemy"}
+      ],
+      "description": "Deal 16 damage. Can be upgraded any number of times. [SIMPLIFIED: single upgrade tier]"
+    }
+  },
+  {
+    "id": "uppercut",
+    "name": "Uppercut",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Deal 13 damage. Apply 1 Weak. Apply 1 Vulnerable.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 13, "target": "enemy"},
+      {"action_type": "apply_status", "value": 1, "target": "enemy", "status_name": "Weak"},
+      {"action_type": "apply_status", "value": 1, "target": "enemy", "status_name": "Vulnerable"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 13, "target": "enemy"},
+        {"action_type": "apply_status", "value": 2, "target": "enemy", "status_name": "Weak"},
+        {"action_type": "apply_status", "value": 2, "target": "enemy", "status_name": "Vulnerable"}
+      ],
+      "description": "Deal 13 damage. Apply 2 Weak. Apply 2 Vulnerable."
+    }
+  },
+  {
+    "id": "sever_soul",
+    "name": "Sever Soul",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Exhaust all non-Attack cards in your hand. Deal 16 damage.",
+    "actions": [
+      {"action_type": "exhaust_cards", "value": -1, "condition": "non_attack"},
+      {"action_type": "deal_damage", "value": 16, "target": "enemy"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "exhaust_cards", "value": -1, "condition": "non_attack"},
+        {"action_type": "deal_damage", "value": 22, "target": "enemy"}
+      ],
+      "description": "Exhaust all non-Attack cards in your hand. Deal 22 damage."
+    }
+  },
+  {
+    "id": "whirlwind",
+    "name": "Whirlwind",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": -1,
+    "target": "ALL_ENEMIES",
+    "description": "Deal 5 damage to ALL enemies X times.",
+    "actions": [
+      {"action_type": "repeat", "times": 0, "children": [
+        {"action_type": "deal_damage", "value": 5, "target": "all_enemies"}
+      ]}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "repeat", "times": 0, "children": [
+          {"action_type": "deal_damage", "value": 8, "target": "all_enemies"}
+        ]}
+      ],
+      "description": "Deal 8 damage to ALL enemies X times."
+    }
+  },
+
+  {"_section": "=== UNCOMMON SKILLS (17) ==="},
+
+  {
+    "id": "battle_trance",
+    "name": "Battle Trance",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 0,
+    "target": "NONE",
+    "description": "Draw 3 cards. You cannot draw additional cards this turn. [SIMPLIFIED: no-draw restriction not modeled]",
+    "actions": [
+      {"action_type": "draw_cards", "value": 3}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "draw_cards", "value": 4}
+      ],
+      "description": "Draw 4 cards. You cannot draw additional cards this turn. [SIMPLIFIED: no-draw restriction not modeled]"
+    }
+  },
+  {
+    "id": "bloodletting",
+    "name": "Bloodletting",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 0,
+    "target": "SELF",
+    "description": "Lose 3 HP. Gain 2 Energy.",
+    "actions": [
+      {"action_type": "lose_hp", "value": 3, "target": "self"},
+      {"action_type": "gain_energy", "value": 2}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "lose_hp", "value": 3, "target": "self"},
+        {"action_type": "gain_energy", "value": 3}
+      ],
+      "description": "Lose 3 HP. Gain 3 Energy."
+    }
+  },
+  {
+    "id": "burning_pact",
+    "name": "Burning Pact",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "NONE",
+    "description": "Exhaust 1 card. Draw 2 cards.",
+    "actions": [
+      {"action_type": "exhaust_cards", "value": 1, "target": "self"},
+      {"action_type": "draw_cards", "value": 2}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "exhaust_cards", "value": 1, "target": "self"},
+        {"action_type": "draw_cards", "value": 3}
+      ],
+      "description": "Exhaust 1 card. Draw 3 cards."
+    }
+  },
+  {
+    "id": "disarm",
+    "name": "Disarm",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Enemy loses 2 Strength. Exhaust.",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "apply_status", "value": -2, "target": "enemy", "status_name": "strength"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": -3, "target": "enemy", "status_name": "strength"}
+      ],
+      "description": "Enemy loses 3 Strength. Exhaust."
+    }
+  },
+  {
+    "id": "dual_wield",
+    "name": "Dual Wield",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "NONE",
+    "description": "Create a copy of an Attack or Power card in your hand. [SIMPLIFIED: approximated as draw 1]",
+    "actions": [
+      {"action_type": "draw_cards", "value": 1}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "draw_cards", "value": 2}
+      ],
+      "description": "Create 2 copies of an Attack or Power card in your hand. [SIMPLIFIED: approximated as draw 2]"
+    }
+  },
+  {
+    "id": "entrench",
+    "name": "Entrench",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "SELF",
+    "description": "Double your Block.",
+    "actions": [
+      {"action_type": "double_block", "target": "self"}
+    ],
+    "upgrade": {
+      "cost": 1,
+      "description": "Double your Block."
+    }
+  },
+  {
+    "id": "flame_barrier",
+    "name": "Flame Barrier",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "SELF",
+    "description": "Gain 12 Block. Whenever you are attacked this turn, deal 4 damage back. [SIMPLIFIED: reactive damage deferred to 2D]",
+    "actions": [
+      {"action_type": "gain_block", "value": 12, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 16, "target": "self"}
+      ],
+      "description": "Gain 16 Block. Whenever you are attacked this turn, deal 6 damage back. [SIMPLIFIED: reactive damage deferred to 2D]"
+    }
+  },
+  {
+    "id": "ghostly_armor",
+    "name": "Ghostly Armor",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Ethereal. Gain 10 Block.",
+    "ethereal": true,
+    "actions": [
+      {"action_type": "gain_block", "value": 10, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 13, "target": "self"}
+      ],
+      "description": "Ethereal. Gain 13 Block."
+    }
+  },
+  {
+    "id": "infernal_blade",
+    "name": "Infernal Blade",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "NONE",
+    "description": "Add a random Attack into your hand. It costs 0 this turn. Exhaust. [SIMPLIFIED: approximated as draw 1]",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "draw_cards", "value": 1}
     ],
     "upgrade": {
       "cost": 0,
-      "description": "Deal damage equal to your current Block."
+      "description": "Add a random Attack into your hand. It costs 0 this turn. Exhaust. [SIMPLIFIED: approximated as draw 1]"
     }
   },
   {
-    "id": "clothesline",
-    "name": "Clothesline",
-    "type": "ATTACK",
+    "id": "intimidate",
+    "name": "Intimidate",
+    "type": "SKILL",
     "rarity": "UNCOMMON",
-    "cost": 2,
-    "target": "ENEMY",
-    "description": "Deal 12 damage. Apply 2 Weak.",
+    "cost": 0,
+    "target": "ALL_ENEMIES",
+    "description": "Apply 1 Weak to ALL enemies. Exhaust.",
+    "exhaust": true,
     "actions": [
-      {"action_type": "deal_damage", "value": 12, "target": "enemy"},
-      {"action_type": "apply_status", "value": 2, "target": "enemy", "status_name": "Weak"}
+      {"action_type": "apply_status", "value": 1, "target": "all_enemies", "status_name": "Weak"}
     ],
     "upgrade": {
       "actions": [
-        {"action_type": "deal_damage", "value": 14, "target": "enemy"},
-        {"action_type": "apply_status", "value": 3, "target": "enemy", "status_name": "Weak"}
+        {"action_type": "apply_status", "value": 2, "target": "all_enemies", "status_name": "Weak"}
       ],
-      "description": "Deal 14 damage. Apply 3 Weak."
+      "description": "Apply 2 Weak to ALL enemies. Exhaust."
     }
   },
   {
-    "id": "heavy_blade",
-    "name": "Heavy Blade",
-    "type": "ATTACK",
+    "id": "power_through",
+    "name": "Power Through",
+    "type": "SKILL",
     "rarity": "UNCOMMON",
-    "cost": 2,
-    "target": "ENEMY",
-    "description": "Deal 14 damage. Strength affects this card 3 times.",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Add 2 Wounds into your hand. Gain 15 Block.",
     "actions": [
-      {"action_type": "deal_damage", "value": 14, "target": "enemy", "condition": "strength_multiplier_3"}
+      {"action_type": "add_card_to_pile", "card_id": "wound", "pile": "hand"},
+      {"action_type": "add_card_to_pile", "card_id": "wound", "pile": "hand"},
+      {"action_type": "gain_block", "value": 15, "target": "self"}
     ],
     "upgrade": {
       "actions": [
-        {"action_type": "deal_damage", "value": 14, "target": "enemy", "condition": "strength_multiplier_5"}
+        {"action_type": "add_card_to_pile", "card_id": "wound", "pile": "hand"},
+        {"action_type": "add_card_to_pile", "card_id": "wound", "pile": "hand"},
+        {"action_type": "gain_block", "value": 20, "target": "self"}
       ],
-      "description": "Deal 14 damage. Strength affects this card 5 times."
+      "description": "Add 2 Wounds into your hand. Gain 20 Block."
     }
   },
   {
-    "id": "perfected_strike",
-    "name": "Perfected Strike",
-    "type": "ATTACK",
+    "id": "rage",
+    "name": "Rage",
+    "type": "SKILL",
     "rarity": "UNCOMMON",
-    "cost": 2,
-    "target": "ENEMY",
-    "description": "Deal 6 damage. Deals 2 additional damage for each \"Strike\" card in your deck.",
+    "cost": 0,
+    "target": "SELF",
+    "description": "Whenever you play an Attack this turn, gain 3 Block.",
     "actions": [
-      {"action_type": "deal_damage", "value": 6, "target": "enemy", "condition": "plus_per_strike_2"}
+      {"action_type": "apply_status", "value": 3, "target": "self", "status_name": "Rage"}
     ],
     "upgrade": {
       "actions": [
-        {"action_type": "deal_damage", "value": 6, "target": "enemy", "condition": "plus_per_strike_3"}
+        {"action_type": "apply_status", "value": 5, "target": "self", "status_name": "Rage"}
       ],
-      "description": "Deal 6 damage. Deals 3 additional damage for each \"Strike\" card in your deck."
+      "description": "Whenever you play an Attack this turn, gain 5 Block."
+    }
+  },
+  {
+    "id": "second_wind",
+    "name": "Second Wind",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Exhaust all non-Attack cards in your hand. Gain 5 Block for each card Exhausted. [SIMPLIFIED: gain block + exhaust 1]",
+    "actions": [
+      {"action_type": "gain_block", "value": 5, "target": "self"},
+      {"action_type": "exhaust_cards", "value": 1, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 7, "target": "self"},
+        {"action_type": "exhaust_cards", "value": 1, "target": "self"}
+      ],
+      "description": "Exhaust all non-Attack cards in your hand. Gain 7 Block for each card Exhausted. [SIMPLIFIED: gain block + exhaust 1]"
+    }
+  },
+  {
+    "id": "seeing_red",
+    "name": "Seeing Red",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "NONE",
+    "description": "Gain 2 Energy. Exhaust.",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "gain_energy", "value": 2}
+    ],
+    "upgrade": {
+      "cost": 0,
+      "description": "Gain 2 Energy. Exhaust."
+    }
+  },
+  {
+    "id": "sentinel",
+    "name": "Sentinel",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Gain 5 Block. If this card is Exhausted, gain 2 Energy. [SIMPLIFIED: if-exhausted trigger deferred to 2D]",
+    "actions": [
+      {"action_type": "gain_block", "value": 5, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 8, "target": "self"}
+      ],
+      "description": "Gain 8 Block. If this card is Exhausted, gain 3 Energy. [SIMPLIFIED: if-exhausted trigger deferred to 2D]"
+    }
+  },
+  {
+    "id": "shockwave",
+    "name": "Shockwave",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "ALL_ENEMIES",
+    "description": "Apply 3 Weak and 3 Vulnerable to ALL enemies. Exhaust.",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "apply_status", "value": 3, "target": "all_enemies", "status_name": "Weak"},
+      {"action_type": "apply_status", "value": 3, "target": "all_enemies", "status_name": "Vulnerable"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 5, "target": "all_enemies", "status_name": "Weak"},
+        {"action_type": "apply_status", "value": 5, "target": "all_enemies", "status_name": "Vulnerable"}
+      ],
+      "description": "Apply 5 Weak and 5 Vulnerable to ALL enemies. Exhaust."
+    }
+  },
+  {
+    "id": "spot_weakness",
+    "name": "Spot Weakness",
+    "type": "SKILL",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "If the enemy intends to attack, gain 3 Strength.",
+    "actions": [
+      {"action_type": "conditional", "condition": "enemy_intends_attack", "children": [
+        {"action_type": "gain_strength", "value": 3, "target": "self"}
+      ]}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "conditional", "condition": "enemy_intends_attack", "children": [
+          {"action_type": "gain_strength", "value": 4, "target": "self"}
+        ]}
+      ],
+      "description": "If the enemy intends to attack, gain 4 Strength."
+    }
+  },
+
+  {"_section": "=== UNCOMMON POWERS (8) ==="},
+
+  {
+    "id": "combust",
+    "name": "Combust",
+    "type": "POWER",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "At the end of your turn, lose 1 HP and deal 5 damage to ALL enemies.",
+    "actions": [
+      {"action_type": "apply_status", "value": 5, "target": "self", "status_name": "Combust"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 7, "target": "self", "status_name": "Combust"}
+      ],
+      "description": "At the end of your turn, lose 1 HP and deal 7 damage to ALL enemies."
+    }
+  },
+  {
+    "id": "dark_embrace",
+    "name": "Dark Embrace",
+    "type": "POWER",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "SELF",
+    "description": "Whenever a card is Exhausted, draw 1 card.",
+    "actions": [
+      {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Dark Embrace"}
+    ],
+    "upgrade": {
+      "cost": 1,
+      "description": "Whenever a card is Exhausted, draw 1 card."
+    }
+  },
+  {
+    "id": "evolve",
+    "name": "Evolve",
+    "type": "POWER",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Whenever you draw a Status card, draw 1 card.",
+    "actions": [
+      {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Evolve"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 2, "target": "self", "status_name": "Evolve"}
+      ],
+      "description": "Whenever you draw a Status card, draw 2 cards."
+    }
+  },
+  {
+    "id": "feel_no_pain",
+    "name": "Feel No Pain",
+    "type": "POWER",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Whenever a card is Exhausted, gain 3 Block.",
+    "actions": [
+      {"action_type": "apply_status", "value": 3, "target": "self", "status_name": "Feel No Pain"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 4, "target": "self", "status_name": "Feel No Pain"}
+      ],
+      "description": "Whenever a card is Exhausted, gain 4 Block."
+    }
+  },
+  {
+    "id": "fire_breathing",
+    "name": "Fire Breathing",
+    "type": "POWER",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Whenever you draw a Status or Curse card, deal 6 damage to ALL enemies.",
+    "actions": [
+      {"action_type": "apply_status", "value": 6, "target": "self", "status_name": "Fire Breathing"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 10, "target": "self", "status_name": "Fire Breathing"}
+      ],
+      "description": "Whenever you draw a Status or Curse card, deal 10 damage to ALL enemies."
     }
   },
   {
@@ -405,6 +1132,382 @@
       ],
       "description": "At the end of your turn, gain 4 Block."
     }
+  },
+  {
+    "id": "rupture",
+    "name": "Rupture",
+    "type": "POWER",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Whenever you lose HP from a card, gain 1 Strength.",
+    "actions": [
+      {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Rupture"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 2, "target": "self", "status_name": "Rupture"}
+      ],
+      "description": "Whenever you lose HP from a card, gain 2 Strength."
+    }
+  },
+
+  {"_section": "=== RARE ATTACKS (5) ==="},
+
+  {
+    "id": "bludgeon",
+    "name": "Bludgeon",
+    "type": "ATTACK",
+    "rarity": "RARE",
+    "cost": 3,
+    "target": "ENEMY",
+    "description": "Deal 32 damage.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 32, "target": "enemy"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 42, "target": "enemy"}
+      ],
+      "description": "Deal 42 damage."
+    }
+  },
+  {
+    "id": "feed",
+    "name": "Feed",
+    "type": "ATTACK",
+    "rarity": "RARE",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal 10 damage. If Fatal, raise your Max HP by 3. Exhaust. [SIMPLIFIED: always heals]",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "deal_damage", "value": 10, "target": "enemy"},
+      {"action_type": "heal", "value": 3, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 12, "target": "enemy"},
+        {"action_type": "heal", "value": 4, "target": "self"}
+      ],
+      "description": "Deal 12 damage. If Fatal, raise your Max HP by 4. Exhaust. [SIMPLIFIED: always heals]"
+    }
+  },
+  {
+    "id": "fiend_fire",
+    "name": "Fiend Fire",
+    "type": "ATTACK",
+    "rarity": "RARE",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Exhaust your hand. Deal 7 damage for each card Exhausted. Exhaust.",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "for_each", "condition": "card_in_hand", "children": [
+        {"action_type": "deal_damage", "value": 7, "target": "enemy"},
+        {"action_type": "exhaust_cards", "value": 1, "target": "self"}
+      ]}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "for_each", "condition": "card_in_hand", "children": [
+          {"action_type": "deal_damage", "value": 10, "target": "enemy"},
+          {"action_type": "exhaust_cards", "value": 1, "target": "self"}
+        ]}
+      ],
+      "description": "Exhaust your hand. Deal 10 damage for each card Exhausted. Exhaust."
+    }
+  },
+  {
+    "id": "immolate",
+    "name": "Immolate",
+    "type": "ATTACK",
+    "rarity": "RARE",
+    "cost": 2,
+    "target": "ALL_ENEMIES",
+    "description": "Deal 21 damage to ALL enemies. Add a Burn into your discard pile.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 21, "target": "all_enemies"},
+      {"action_type": "add_card_to_pile", "card_id": "burn", "pile": "discard"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 28, "target": "all_enemies"},
+        {"action_type": "add_card_to_pile", "card_id": "burn", "pile": "discard"}
+      ],
+      "description": "Deal 28 damage to ALL enemies. Add a Burn into your discard pile."
+    }
+  },
+  {
+    "id": "reaper",
+    "name": "Reaper",
+    "type": "ATTACK",
+    "rarity": "RARE",
+    "cost": 2,
+    "target": "ALL_ENEMIES",
+    "description": "Deal 4 damage to ALL enemies. Heal HP equal to unblocked damage. Exhaust. [SIMPLIFIED: heals fixed amount]",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "deal_damage", "value": 4, "target": "all_enemies"},
+      {"action_type": "heal", "value": 4, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 5, "target": "all_enemies"},
+        {"action_type": "heal", "value": 5, "target": "self"}
+      ],
+      "description": "Deal 5 damage to ALL enemies. Heal HP equal to unblocked damage. Exhaust. [SIMPLIFIED: heals fixed amount]"
+    }
+  },
+
+  {"_section": "=== RARE SKILLS (5) ==="},
+
+  {
+    "id": "double_tap",
+    "name": "Double Tap",
+    "type": "SKILL",
+    "rarity": "RARE",
+    "cost": 1,
+    "target": "SELF",
+    "description": "This turn, your next Attack is played twice.",
+    "actions": [
+      {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Double Tap"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 2, "target": "self", "status_name": "Double Tap"}
+      ],
+      "description": "This turn, your next 2 Attacks are played twice."
+    }
+  },
+  {
+    "id": "exhume",
+    "name": "Exhume",
+    "type": "SKILL",
+    "rarity": "RARE",
+    "cost": 1,
+    "target": "NONE",
+    "description": "Put a card from your Exhaust pile into your hand. Exhaust. [SIMPLIFIED: approximated as draw 1]",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "draw_cards", "value": 1}
+    ],
+    "upgrade": {
+      "cost": 0,
+      "description": "Put a card from your Exhaust pile into your hand. Exhaust. [SIMPLIFIED: approximated as draw 1]"
+    }
+  },
+  {
+    "id": "impervious",
+    "name": "Impervious",
+    "type": "SKILL",
+    "rarity": "RARE",
+    "cost": 2,
+    "target": "SELF",
+    "description": "Gain 30 Block. Exhaust.",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "gain_block", "value": 30, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 40, "target": "self"}
+      ],
+      "description": "Gain 40 Block. Exhaust."
+    }
+  },
+  {
+    "id": "limit_break",
+    "name": "Limit Break",
+    "type": "SKILL",
+    "rarity": "RARE",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Double your Strength. Exhaust.",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "multiply_status", "value": 2, "target": "self", "status_name": "strength"}
+    ],
+    "upgrade": {
+      "exhaust": false,
+      "description": "Double your Strength."
+    }
+  },
+  {
+    "id": "offering",
+    "name": "Offering",
+    "type": "SKILL",
+    "rarity": "RARE",
+    "cost": 0,
+    "target": "SELF",
+    "description": "Lose 6 HP. Gain 2 Energy. Draw 3 cards. Exhaust.",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "lose_hp", "value": 6, "target": "self"},
+      {"action_type": "gain_energy", "value": 2},
+      {"action_type": "draw_cards", "value": 3}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "lose_hp", "value": 6, "target": "self"},
+        {"action_type": "gain_energy", "value": 2},
+        {"action_type": "draw_cards", "value": 5}
+      ],
+      "description": "Lose 6 HP. Gain 2 Energy. Draw 5 cards. Exhaust."
+    }
+  },
+
+  {"_section": "=== RARE POWERS (6) ==="},
+
+  {
+    "id": "barricade",
+    "name": "Barricade",
+    "type": "POWER",
+    "rarity": "RARE",
+    "cost": 3,
+    "target": "SELF",
+    "description": "Block is not removed at the start of your turn.",
+    "actions": [
+      {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Barricade"}
+    ],
+    "upgrade": {
+      "cost": 2,
+      "description": "Block is not removed at the start of your turn."
+    }
+  },
+  {
+    "id": "berserk",
+    "name": "Berserk",
+    "type": "POWER",
+    "rarity": "RARE",
+    "cost": 0,
+    "target": "SELF",
+    "description": "Gain 2 Vulnerable. At the start of your turn, gain 1 Energy.",
+    "actions": [
+      {"action_type": "apply_status", "value": 2, "target": "self", "status_name": "Vulnerable"},
+      {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Berserk"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Vulnerable"},
+        {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Berserk"}
+      ],
+      "description": "Gain 1 Vulnerable. At the start of your turn, gain 1 Energy."
+    }
+  },
+  {
+    "id": "brutality",
+    "name": "Brutality",
+    "type": "POWER",
+    "rarity": "RARE",
+    "cost": 0,
+    "target": "SELF",
+    "description": "At the start of your turn, lose 1 HP and draw 1 card.",
+    "actions": [
+      {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Brutality"}
+    ],
+    "upgrade": {
+      "innate": true,
+      "description": "Innate. At the start of your turn, lose 1 HP and draw 1 card."
+    }
+  },
+  {
+    "id": "corruption",
+    "name": "Corruption",
+    "type": "POWER",
+    "rarity": "RARE",
+    "cost": 3,
+    "target": "SELF",
+    "description": "Skills cost 0. Whenever you play a Skill, Exhaust it.",
+    "actions": [
+      {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "Corruption"}
+    ],
+    "upgrade": {
+      "cost": 2,
+      "description": "Skills cost 0. Whenever you play a Skill, Exhaust it."
+    }
+  },
+  {
+    "id": "demon_form",
+    "name": "Demon Form",
+    "type": "POWER",
+    "rarity": "RARE",
+    "cost": 3,
+    "target": "SELF",
+    "description": "At the start of your turn, gain 2 Strength.",
+    "actions": [
+      {"action_type": "apply_status", "value": 2, "target": "self", "status_name": "Demon Form"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 3, "target": "self", "status_name": "Demon Form"}
+      ],
+      "description": "At the start of your turn, gain 3 Strength."
+    }
+  },
+  {
+    "id": "juggernaut",
+    "name": "Juggernaut",
+    "type": "POWER",
+    "rarity": "RARE",
+    "cost": 2,
+    "target": "SELF",
+    "description": "Whenever you gain Block, deal 5 damage to a random enemy.",
+    "actions": [
+      {"action_type": "apply_status", "value": 5, "target": "self", "status_name": "Juggernaut"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 7, "target": "self", "status_name": "Juggernaut"}
+      ],
+      "description": "Whenever you gain Block, deal 7 damage to a random enemy."
+    }
+  },
+
+  {"_section": "=== STATUS CARDS (5) ==="},
+
+  {
+    "id": "burn",
+    "name": "Burn",
+    "type": "STATUS",
+    "rarity": "SPECIAL",
+    "cost": -2,
+    "target": "NONE",
+    "description": "Unplayable. At the end of your turn, take 2 damage.",
+    "actions": []
+  },
+  {
+    "id": "dazed",
+    "name": "Dazed",
+    "type": "STATUS",
+    "rarity": "SPECIAL",
+    "cost": -2,
+    "target": "NONE",
+    "description": "Unplayable. Ethereal.",
+    "ethereal": true,
+    "actions": []
+  },
+  {
+    "id": "slimed",
+    "name": "Slimed",
+    "type": "STATUS",
+    "rarity": "SPECIAL",
+    "cost": 1,
+    "target": "NONE",
+    "description": "Exhaust.",
+    "exhaust": true,
+    "actions": []
+  },
+  {
+    "id": "void",
+    "name": "Void",
+    "type": "STATUS",
+    "rarity": "SPECIAL",
+    "cost": -2,
+    "target": "NONE",
+    "description": "Unplayable. Ethereal. When this card is drawn, lose 1 Energy.",
+    "ethereal": true,
+    "actions": []
   },
   {
     "id": "wound",

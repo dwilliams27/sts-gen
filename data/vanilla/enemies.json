@@ -1,17 +1,13 @@
 [
+  {"_section": "=== NORMAL ENEMIES — Basic ==="},
+
   {
     "id": "jaw_worm",
     "name": "Jaw Worm",
     "hp_min": 40,
     "hp_max": 44,
     "moves": [
-      {
-        "id": "chomp",
-        "name": "Chomp",
-        "type": "attack",
-        "damage": 11,
-        "hits": 1
-      },
+      {"id": "chomp", "name": "Chomp", "type": "attack", "damage": 11, "hits": 1},
       {
         "id": "bellow",
         "name": "Bellow",
@@ -21,26 +17,16 @@
           {"action_type": "gain_block", "value": 6, "target": "self"}
         ]
       },
-      {
-        "id": "thrash",
-        "name": "Thrash",
-        "type": "attack_defend",
-        "damage": 7,
-        "hits": 1,
-        "block": 5
-      }
+      {"id": "thrash", "name": "Thrash", "type": "attack_defend", "damage": 7, "hits": 1, "block": 5}
     ],
     "pattern": {
       "type": "weighted_random",
       "opening_move": "chomp",
-      "weights": {
-        "chomp": 25,
-        "bellow": 30,
-        "thrash": 45
-      },
-      "max_consecutive": 2
+      "weights": {"chomp": 25, "bellow": 45, "thrash": 30},
+      "per_move_consecutive": {"chomp": 1, "bellow": 1, "thrash": 2}
     }
   },
+
   {
     "id": "cultist",
     "name": "Cultist",
@@ -55,13 +41,7 @@
           {"action_type": "apply_status", "value": 3, "target": "self", "status_name": "Ritual"}
         ]
       },
-      {
-        "id": "dark_strike",
-        "name": "Dark Strike",
-        "type": "attack",
-        "damage": 6,
-        "hits": 1
-      }
+      {"id": "dark_strike", "name": "Dark Strike", "type": "attack", "damage": 6, "hits": 1}
     ],
     "pattern": {
       "type": "fixed_sequence",
@@ -70,20 +50,15 @@
       "loop_from": 1
     }
   },
+
   {
     "id": "red_louse",
     "name": "Red Louse",
     "hp_min": 10,
     "hp_max": 15,
+    "powers": [{"id": "curl_up", "block_min": 3, "block_max": 7}],
     "moves": [
-      {
-        "id": "bite",
-        "name": "Bite",
-        "type": "attack",
-        "damage_min": 5,
-        "damage_max": 7,
-        "hits": 1
-      },
+      {"id": "bite", "name": "Bite", "type": "attack", "damage_min": 5, "damage_max": 7, "hits": 1},
       {
         "id": "grow",
         "name": "Grow",
@@ -95,12 +70,467 @@
     ],
     "pattern": {
       "type": "weighted_random",
-      "opening_move": null,
-      "weights": {
-        "bite": 75,
-        "grow": 25
-      },
+      "weights": {"bite": 75, "grow": 25},
       "max_consecutive": 2
+    }
+  },
+
+  {
+    "id": "green_louse",
+    "name": "Green Louse",
+    "hp_min": 11,
+    "hp_max": 17,
+    "powers": [{"id": "curl_up", "block_min": 3, "block_max": 7}],
+    "moves": [
+      {"id": "bite", "name": "Bite", "type": "attack", "damage_min": 5, "damage_max": 7, "hits": 1},
+      {"id": "spit_web", "name": "Spit Web", "type": "debuff", "debuffs": [{"status": "weak", "stacks": 2}]}
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "weights": {"bite": 75, "spit_web": 25},
+      "max_consecutive": 2
+    }
+  },
+
+  {"_section": "=== NORMAL ENEMIES — Slimes ==="},
+
+  {
+    "id": "acid_slime_s",
+    "name": "Acid Slime (S)",
+    "hp_min": 8,
+    "hp_max": 12,
+    "moves": [
+      {"id": "lick", "name": "Lick", "type": "debuff", "debuffs": [{"status": "weak", "stacks": 1}]},
+      {"id": "tackle", "name": "Tackle", "type": "attack", "damage": 3, "hits": 1}
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "weights": {"lick": 50, "tackle": 50},
+      "max_consecutive": 1
+    }
+  },
+
+  {
+    "id": "acid_slime_m",
+    "name": "Acid Slime (M)",
+    "hp_min": 28,
+    "hp_max": 32,
+    "moves": [
+      {"id": "corrosive_spit", "name": "Corrosive Spit", "type": "attack", "damage": 7, "hits": 1,
+       "status_cards": [{"card_id": "slimed", "count": 1}]},
+      {"id": "tackle", "name": "Tackle", "type": "attack", "damage": 10, "hits": 1},
+      {"id": "lick", "name": "Lick", "type": "debuff", "debuffs": [{"status": "weak", "stacks": 1}]}
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "weights": {"corrosive_spit": 30, "tackle": 40, "lick": 30},
+      "per_move_consecutive": {"tackle": 1, "corrosive_spit": 2, "lick": 2}
+    }
+  },
+
+  {
+    "id": "acid_slime_l",
+    "name": "Acid Slime (L)",
+    "hp_min": 65,
+    "hp_max": 69,
+    "moves": [
+      {"id": "corrosive_spit", "name": "Corrosive Spit", "type": "attack", "damage": 11, "hits": 1,
+       "status_cards": [{"card_id": "slimed", "count": 2}]},
+      {"id": "tackle", "name": "Tackle", "type": "attack", "damage": 16, "hits": 1},
+      {"id": "lick", "name": "Lick", "type": "debuff", "debuffs": [{"status": "weak", "stacks": 2}]}
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "weights": {"corrosive_spit": 30, "tackle": 40, "lick": 30},
+      "per_move_consecutive": {"tackle": 1, "corrosive_spit": 2, "lick": 2}
+    },
+    "special": {
+      "split": {
+        "hp_threshold_pct": 50,
+        "spawn": ["acid_slime_m", "acid_slime_m"],
+        "inherit_hp": true
+      }
+    }
+  },
+
+  {
+    "id": "spike_slime_s",
+    "name": "Spike Slime (S)",
+    "hp_min": 10,
+    "hp_max": 14,
+    "moves": [
+      {"id": "tackle", "name": "Tackle", "type": "attack", "damage": 5, "hits": 1}
+    ],
+    "pattern": {
+      "type": "fixed_sequence",
+      "sequence": ["tackle"],
+      "loop_from": 0
+    }
+  },
+
+  {
+    "id": "spike_slime_m",
+    "name": "Spike Slime (M)",
+    "hp_min": 28,
+    "hp_max": 32,
+    "moves": [
+      {"id": "flame_tackle", "name": "Flame Tackle", "type": "attack", "damage": 8, "hits": 1,
+       "status_cards": [{"card_id": "slimed", "count": 1}]},
+      {"id": "lick", "name": "Lick", "type": "debuff", "debuffs": [{"status": "frail", "stacks": 1}]}
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "weights": {"flame_tackle": 30, "lick": 70},
+      "max_consecutive": 2
+    }
+  },
+
+  {
+    "id": "spike_slime_l",
+    "name": "Spike Slime (L)",
+    "hp_min": 64,
+    "hp_max": 70,
+    "moves": [
+      {"id": "flame_tackle", "name": "Flame Tackle", "type": "attack", "damage": 16, "hits": 1,
+       "status_cards": [{"card_id": "slimed", "count": 2}]},
+      {"id": "lick", "name": "Lick", "type": "debuff", "debuffs": [{"status": "frail", "stacks": 2}]}
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "weights": {"flame_tackle": 30, "lick": 70},
+      "max_consecutive": 2
+    },
+    "special": {
+      "split": {
+        "hp_threshold_pct": 50,
+        "spawn": ["spike_slime_m", "spike_slime_m"],
+        "inherit_hp": true
+      }
+    }
+  },
+
+  {"_section": "=== NORMAL ENEMIES — Mid-tier ==="},
+
+  {
+    "id": "fungi_beast",
+    "name": "Fungi Beast",
+    "hp_min": 22,
+    "hp_max": 28,
+    "on_death": [
+      {"action_type": "apply_status", "value": 2, "status_name": "vulnerable", "target": "player"}
+    ],
+    "moves": [
+      {"id": "bite", "name": "Bite", "type": "attack", "damage": 6, "hits": 1},
+      {
+        "id": "grow",
+        "name": "Grow",
+        "type": "buff",
+        "actions": [
+          {"action_type": "gain_strength", "value": 3, "target": "self"}
+        ]
+      }
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "weights": {"bite": 60, "grow": 40},
+      "per_move_consecutive": {"bite": 2, "grow": 1}
+    }
+  },
+
+  {
+    "id": "looter",
+    "name": "Looter",
+    "hp_min": 44,
+    "hp_max": 48,
+    "powers": [{"id": "thievery", "value": 15}],
+    "moves": [
+      {"id": "mug", "name": "Mug", "type": "attack", "damage": 10, "hits": 1},
+      {"id": "lunge", "name": "Lunge", "type": "attack", "damage": 12, "hits": 1},
+      {"id": "smoke_bomb", "name": "Smoke Bomb", "type": "defend", "block": 6},
+      {"id": "escape", "name": "Escape", "type": "escape"}
+    ],
+    "pattern": {
+      "type": "looter"
+    }
+  },
+
+  {
+    "id": "blue_slaver",
+    "name": "Blue Slaver",
+    "hp_min": 46,
+    "hp_max": 50,
+    "moves": [
+      {"id": "stab", "name": "Stab", "type": "attack", "damage": 12, "hits": 1},
+      {"id": "rake", "name": "Rake", "type": "attack", "damage": 7, "hits": 1,
+       "debuffs": [{"status": "weak", "stacks": 1}]}
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "weights": {"stab": 60, "rake": 40},
+      "max_consecutive": 2
+    }
+  },
+
+  {
+    "id": "red_slaver",
+    "name": "Red Slaver",
+    "hp_min": 46,
+    "hp_max": 50,
+    "moves": [
+      {"id": "stab", "name": "Stab", "type": "attack", "damage": 13, "hits": 1},
+      {"id": "scrape", "name": "Scrape", "type": "attack", "damage": 8, "hits": 1,
+       "debuffs": [{"status": "vulnerable", "stacks": 1}]},
+      {"id": "entangle", "name": "Entangle", "type": "debuff",
+       "debuffs": [{"status": "entangled", "stacks": 1}]}
+    ],
+    "pattern": {
+      "type": "red_slaver",
+      "opening_move": "stab",
+      "entangle_chance": 25,
+      "pre_entangle_sequence": ["scrape", "scrape", "stab"],
+      "post_entangle_weights": {"stab": 55, "scrape": 45},
+      "post_entangle_max_consecutive": 2
+    }
+  },
+
+  {"_section": "=== NORMAL ENEMIES — Gremlins ==="},
+
+  {
+    "id": "mad_gremlin",
+    "name": "Mad Gremlin",
+    "hp_min": 20,
+    "hp_max": 24,
+    "powers": [{"id": "angry", "value": 1}],
+    "moves": [
+      {"id": "scratch", "name": "Scratch", "type": "attack", "damage": 4, "hits": 1}
+    ],
+    "pattern": {
+      "type": "fixed_sequence",
+      "sequence": ["scratch"],
+      "loop_from": 0
+    }
+  },
+
+  {
+    "id": "sneaky_gremlin",
+    "name": "Sneaky Gremlin",
+    "hp_min": 10,
+    "hp_max": 14,
+    "moves": [
+      {"id": "puncture", "name": "Puncture", "type": "attack", "damage": 9, "hits": 1}
+    ],
+    "pattern": {
+      "type": "fixed_sequence",
+      "sequence": ["puncture"],
+      "loop_from": 0
+    }
+  },
+
+  {
+    "id": "fat_gremlin",
+    "name": "Fat Gremlin",
+    "hp_min": 13,
+    "hp_max": 17,
+    "moves": [
+      {"id": "smash", "name": "Smash", "type": "attack", "damage": 4, "hits": 1,
+       "debuffs": [{"status": "weak", "stacks": 1}]}
+    ],
+    "pattern": {
+      "type": "fixed_sequence",
+      "sequence": ["smash"],
+      "loop_from": 0
+    }
+  },
+
+  {
+    "id": "shield_gremlin",
+    "name": "Shield Gremlin",
+    "hp_min": 12,
+    "hp_max": 15,
+    "moves": [
+      {"id": "protect", "name": "Protect", "type": "protect_ally", "block": 7},
+      {"id": "shield_bash", "name": "Shield Bash", "type": "attack", "damage": 6, "hits": 1}
+    ],
+    "pattern": {
+      "type": "shield_gremlin",
+      "protect_move": "protect",
+      "solo_move": "shield_bash"
+    }
+  },
+
+  {
+    "id": "gremlin_wizard",
+    "name": "Gremlin Wizard",
+    "hp_min": 21,
+    "hp_max": 25,
+    "moves": [
+      {"id": "charging", "name": "Charging", "type": "none"},
+      {"id": "ultimate_blast", "name": "Ultimate Blast", "type": "attack", "damage": 25, "hits": 1}
+    ],
+    "pattern": {
+      "type": "fixed_sequence",
+      "sequence": ["charging", "charging", "ultimate_blast", "charging", "charging", "charging", "ultimate_blast"],
+      "loop_from": 3
+    }
+  },
+
+  {"_section": "=== ELITES ==="},
+
+  {
+    "id": "gremlin_nob",
+    "name": "Gremlin Nob",
+    "hp_min": 82,
+    "hp_max": 86,
+    "moves": [
+      {
+        "id": "bellow",
+        "name": "Bellow",
+        "type": "buff",
+        "actions": [
+          {"action_type": "apply_status", "value": 2, "target": "self", "status_name": "Enrage"}
+        ]
+      },
+      {"id": "rush", "name": "Rush", "type": "attack", "damage": 14, "hits": 1},
+      {"id": "skull_bash", "name": "Skull Bash", "type": "attack", "damage": 6, "hits": 1,
+       "debuffs": [{"status": "vulnerable", "stacks": 2}]}
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "opening_move": "bellow",
+      "weights": {"bellow": 0, "rush": 67, "skull_bash": 33},
+      "per_move_consecutive": {"rush": 2}
+    }
+  },
+
+  {
+    "id": "lagavulin",
+    "name": "Lagavulin",
+    "hp_min": 109,
+    "hp_max": 111,
+    "moves": [
+      {"id": "attack", "name": "Attack", "type": "attack", "damage": 18, "hits": 1},
+      {
+        "id": "siphon_soul",
+        "name": "Siphon Soul",
+        "type": "debuff",
+        "debuffs": [
+          {"status": "dexterity", "stacks": -1},
+          {"status": "strength", "stacks": -1}
+        ]
+      },
+      {"id": "sleep", "name": "Sleep", "type": "none"}
+    ],
+    "pattern": {
+      "type": "lagavulin",
+      "sleep_turns": 3,
+      "metallicize": 8,
+      "awake_sequence": ["attack", "attack", "siphon_soul"],
+      "awake_loop_from": 0
+    }
+  },
+
+  {
+    "id": "sentry",
+    "name": "Sentry",
+    "hp_min": 38,
+    "hp_max": 42,
+    "powers": [{"id": "artifact", "value": 1}],
+    "moves": [
+      {"id": "bolt", "name": "Bolt", "type": "debuff",
+       "status_cards": [{"card_id": "dazed", "count": 2}]},
+      {"id": "beam", "name": "Beam", "type": "attack", "damage": 9, "hits": 1}
+    ],
+    "pattern": {
+      "type": "fixed_sequence",
+      "sequence": ["bolt", "beam"],
+      "loop_from": 0,
+      "start_offset_by_index": true
+    }
+  },
+
+  {"_section": "=== BOSSES ==="},
+
+  {
+    "id": "the_guardian",
+    "name": "The Guardian",
+    "hp_min": 240,
+    "hp_max": 240,
+    "moves": [
+      {"id": "charging_up", "name": "Charging Up", "type": "defend", "block": 9},
+      {"id": "fierce_bash", "name": "Fierce Bash", "type": "attack", "damage": 32, "hits": 1},
+      {"id": "vent_steam", "name": "Vent Steam", "type": "debuff",
+       "debuffs": [{"status": "weak", "stacks": 2}, {"status": "vulnerable", "stacks": 2}]},
+      {"id": "whirlwind", "name": "Whirlwind", "type": "attack", "damage": 5, "hits": 4},
+      {"id": "defensive_mode", "name": "Defensive Mode", "type": "buff",
+       "actions": [
+         {"action_type": "apply_status", "value": 3, "target": "self", "status_name": "Sharp Hide"}
+       ]},
+      {"id": "roll_attack", "name": "Roll Attack", "type": "attack", "damage": 9, "hits": 1},
+      {"id": "twin_slam", "name": "Twin Slam", "type": "attack", "damage": 8, "hits": 2}
+    ],
+    "pattern": {
+      "type": "guardian_mode_shift",
+      "initial_threshold": 30,
+      "threshold_increase": 10,
+      "block_on_shift": 20,
+      "offensive_sequence": ["charging_up", "fierce_bash", "vent_steam", "whirlwind"],
+      "defensive_sequence": ["defensive_mode", "roll_attack", "twin_slam"]
+    }
+  },
+
+  {
+    "id": "hexaghost",
+    "name": "Hexaghost",
+    "hp_min": 250,
+    "hp_max": 250,
+    "moves": [
+      {"id": "activate", "name": "Activate", "type": "none"},
+      {"id": "divider", "name": "Divider", "type": "attack", "damage": 0, "hits": 6,
+       "special_damage": "divider"},
+      {"id": "sear", "name": "Sear", "type": "attack", "damage": 6, "hits": 1,
+       "status_cards": [{"card_id": "burn", "count": 1}]},
+      {"id": "tackle", "name": "Tackle", "type": "attack", "damage": 5, "hits": 2},
+      {
+        "id": "inflame",
+        "name": "Inflame",
+        "type": "buff",
+        "actions": [
+          {"action_type": "gain_strength", "value": 2, "target": "self"},
+          {"action_type": "gain_block", "value": 12, "target": "self"}
+        ]
+      },
+      {"id": "inferno", "name": "Inferno", "type": "attack", "damage": 2, "hits": 6,
+       "status_cards": [{"card_id": "burn", "count": 3}]}
+    ],
+    "pattern": {
+      "type": "fixed_sequence",
+      "sequence": ["activate", "divider", "sear", "tackle", "sear", "inflame", "tackle", "inferno"],
+      "loop_from": 2
+    }
+  },
+
+  {
+    "id": "slime_boss",
+    "name": "Slime Boss",
+    "hp_min": 140,
+    "hp_max": 140,
+    "moves": [
+      {"id": "goop_spray", "name": "Goop Spray", "type": "debuff",
+       "status_cards": [{"card_id": "slimed", "count": 3}]},
+      {"id": "preparing", "name": "Preparing", "type": "none"},
+      {"id": "slam", "name": "Slam", "type": "attack", "damage": 35, "hits": 1}
+    ],
+    "pattern": {
+      "type": "fixed_sequence",
+      "sequence": ["goop_spray", "preparing", "slam"],
+      "loop_from": 0
+    },
+    "special": {
+      "split": {
+        "hp_threshold_pct": 50,
+        "spawn": ["acid_slime_l", "spike_slime_l"],
+        "inherit_hp": true
+      }
     }
   }
 ]

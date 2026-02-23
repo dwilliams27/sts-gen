@@ -9,7 +9,7 @@ Full architecture and phased plan: `docs/FOUNDATION.md`
 ## Quick Reference
 
 ```bash
-uv run pytest tests/ -v          # Run all tests (166 tests, <1s)
+uv run pytest tests/ -v          # Run all tests (267 tests, ~5s)
 uv run pytest tests/ -x          # Stop on first failure
 ```
 
@@ -27,12 +27,14 @@ See `COMMAND.md` for simulation commands.
 
 **Simulation fidelity matters.** Every mechanic should match real STS behavior. When in doubt, check against the decompiled game source. Wrong simulation results produce wrong balance conclusions.
 
-## Architecture (Phase 1 — what exists now)
+**Refactor when needed.** Don't be afraid to rearchitect systems, files, or components when they won't work well with new features. A bit of tech debt is fine, but when a system is clearly fighting the new requirements, take the time to refactor rather than piling hacks on top. This should be a considered decision, not the first resort — but also not avoided out of inertia.
+
+## Architecture
 
 ```
 src/sts_gen/
   ir/                          # Pydantic v2 IR schema
-    actions.py                 #   ActionNode + ActionType (20 primitives)
+    actions.py                 #   ActionNode + ActionType (23 primitives)
     cards.py                   #   CardDefinition, CardType, CardRarity, CardTarget, UpgradeDefinition
     relics.py                  #   RelicDefinition, RelicTier
     potions.py                 #   PotionDefinition, PotionRarity
@@ -67,11 +69,16 @@ src/sts_gen/
       random_agent.py          # RandomAgent (random valid actions, 10% end-turn chance)
 
 data/vanilla/
-  ironclad_cards.json          # 22 Ironclad cards in IR format
-  enemies.json                 # 3 Act 1 enemies (Jaw Worm, Cultist, Red Louse)
+  ironclad_cards.json          # 80 Ironclad cards in IR format (all wiki-verified)
+  enemies.json                 # 25 Act 1 enemies (wiki-verified)
+  encounters.json              # Act 1 encounter compositions (easy/normal/elite/boss pools)
 
-tests/                         # Mirrors src/ structure, 166 tests
+tests/                         # Mirrors src/ structure, 267 tests
 ```
+
+## Phase 2 Plan
+
+Full plan: `docs/PHASE2.md`
 
 ## Key Naming Conventions
 
@@ -82,11 +89,23 @@ tests/                         # Mirrors src/ structure, 166 tests
 - Source indexing: `"player"` or integer enemy index
 - Target specs: `"enemy"`, `"all_enemies"`, `"self"`, `"random"`, `"none"`
 
-## What Phase 1 Does NOT Have Yet
+## Phase 2 Progress
 
-- Ground-truth validation (simulation results not yet verified against known STS behavior)
+- [x] 2A: Interpreter extensions (3 new ActionTypes, 2 new conditions, 2 new damage conditions, play restrictions, exhaust-all, X-cost REPEAT, ethereal/innate/retain)
+- [x] 2B: Full Ironclad card pool (80 cards, wiki-verified: 3 basic + 20 common + 36 uncommon + 16 rare + 5 status)
+- [x] 2C: Full Act 1 enemy pool (25 enemies + encounters, wiki-verified)
+- [ ] 2D: Status trigger system
+- [ ] 2E: Relics + potions
+- [ ] 2F: Map generator + run manager
+- [ ] 2G: HeuristicAgent
+- [ ] 2H: Integration + exit gate
+
+## What Doesn't Exist Yet
+
 - HeuristicAgent (only RandomAgent exists)
-- Full Act 1 content (only 22/~75 Ironclad cards, 3 enemies)
 - Map generation, run manager, rewards, shops, relics, potions in sim
-- X-cost card testing, retain/exhaust mechanics testing
+- Status trigger system (Metallicize/Ritual are hardcoded, power cards' trigger-based effects don't work generically yet)
+- UpgradeDefinition now supports exhaust/innate overrides (Limit Break+, Brutality+)
+- Some cards are simplified (marked [SIMPLIFIED] in description): Armaments, Dual Wield, Rampage, Blood for Blood, Searing Blow, Feed, Fiend Fire, Reaper, Exhume, Second Wind, etc.
+- Enemy reactive hooks (Enrage, Sharp Hide, Curl Up, Angry, split, escape, mode shift, sleep/wake) are implemented directly in runner.py — not yet generalized through the trigger system
 - LLM agents, balance analysis, mod builder

@@ -54,6 +54,12 @@ class UpgradeDefinition(BaseModel):
     description: str | None = None
     """Replacement description text after upgrade, or None to keep the base."""
 
+    exhaust: bool | None = None
+    """If set, overrides the base card's exhaust flag on upgrade."""
+
+    innate: bool | None = None
+    """If set, overrides the base card's innate flag on upgrade."""
+
 
 class CardDefinition(BaseModel):
     """Complete definition of a single card in the IR."""
@@ -99,3 +105,8 @@ class CardDefinition(BaseModel):
 
     retain: bool = False
     """If True the card is not discarded at end of turn."""
+
+    play_restriction: str | None = None
+    """Condition string that must evaluate to True for this card to be playable.
+    Uses the same condition syntax as CONDITIONAL nodes (e.g. 'only_attacks_in_hand').
+    None means no restriction."""
