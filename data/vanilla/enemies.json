@@ -1,0 +1,106 @@
+[
+  {
+    "id": "jaw_worm",
+    "name": "Jaw Worm",
+    "hp_min": 40,
+    "hp_max": 44,
+    "moves": [
+      {
+        "id": "chomp",
+        "name": "Chomp",
+        "type": "attack",
+        "damage": 11,
+        "hits": 1
+      },
+      {
+        "id": "bellow",
+        "name": "Bellow",
+        "type": "buff",
+        "actions": [
+          {"action_type": "gain_strength", "value": 3, "target": "self"},
+          {"action_type": "gain_block", "value": 6, "target": "self"}
+        ]
+      },
+      {
+        "id": "thrash",
+        "name": "Thrash",
+        "type": "attack_defend",
+        "damage": 7,
+        "hits": 1,
+        "block": 5
+      }
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "opening_move": "chomp",
+      "weights": {
+        "chomp": 25,
+        "bellow": 30,
+        "thrash": 45
+      },
+      "max_consecutive": 2
+    }
+  },
+  {
+    "id": "cultist",
+    "name": "Cultist",
+    "hp_min": 48,
+    "hp_max": 54,
+    "moves": [
+      {
+        "id": "incantation",
+        "name": "Incantation",
+        "type": "buff",
+        "actions": [
+          {"action_type": "apply_status", "value": 3, "target": "self", "status_name": "Ritual"}
+        ]
+      },
+      {
+        "id": "dark_strike",
+        "name": "Dark Strike",
+        "type": "attack",
+        "damage": 6,
+        "hits": 1
+      }
+    ],
+    "pattern": {
+      "type": "fixed_sequence",
+      "opening_move": "incantation",
+      "sequence": ["incantation", "dark_strike"],
+      "loop_from": 1
+    }
+  },
+  {
+    "id": "red_louse",
+    "name": "Red Louse",
+    "hp_min": 10,
+    "hp_max": 15,
+    "moves": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "type": "attack",
+        "damage_min": 5,
+        "damage_max": 7,
+        "hits": 1
+      },
+      {
+        "id": "grow",
+        "name": "Grow",
+        "type": "buff",
+        "actions": [
+          {"action_type": "gain_strength", "value": 3, "target": "self"}
+        ]
+      }
+    ],
+    "pattern": {
+      "type": "weighted_random",
+      "opening_move": null,
+      "weights": {
+        "bite": 75,
+        "grow": 25
+      },
+      "max_consecutive": 2
+    }
+  }
+]

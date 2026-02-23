@@ -1,0 +1,419 @@
+[
+  {
+    "id": "strike",
+    "name": "Strike",
+    "type": "ATTACK",
+    "rarity": "BASIC",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal 6 damage.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 6, "target": "enemy"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 9, "target": "enemy"}
+      ],
+      "description": "Deal 9 damage."
+    }
+  },
+  {
+    "id": "defend",
+    "name": "Defend",
+    "type": "SKILL",
+    "rarity": "BASIC",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Gain 5 Block.",
+    "actions": [
+      {"action_type": "gain_block", "value": 5, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 8, "target": "self"}
+      ],
+      "description": "Gain 8 Block."
+    }
+  },
+  {
+    "id": "bash",
+    "name": "Bash",
+    "type": "ATTACK",
+    "rarity": "BASIC",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Deal 8 damage. Apply 2 Vulnerable.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 8, "target": "enemy"},
+      {"action_type": "apply_status", "value": 2, "target": "enemy", "status_name": "Vulnerable"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 10, "target": "enemy"},
+        {"action_type": "apply_status", "value": 3, "target": "enemy", "status_name": "Vulnerable"}
+      ],
+      "description": "Deal 10 damage. Apply 3 Vulnerable."
+    }
+  },
+  {
+    "id": "anger",
+    "name": "Anger",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 0,
+    "target": "ENEMY",
+    "description": "Deal 6 damage. Add a copy of this card to your discard pile.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 6, "target": "enemy"},
+      {"action_type": "add_card_to_pile", "card_id": "anger", "pile": "discard"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 8, "target": "enemy"},
+        {"action_type": "add_card_to_pile", "card_id": "anger", "pile": "discard"}
+      ],
+      "description": "Deal 8 damage. Add a copy of this card to your discard pile."
+    }
+  },
+  {
+    "id": "cleave",
+    "name": "Cleave",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "ALL_ENEMIES",
+    "description": "Deal 8 damage to ALL enemies.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 8, "target": "all_enemies"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 11, "target": "all_enemies"}
+      ],
+      "description": "Deal 11 damage to ALL enemies."
+    }
+  },
+  {
+    "id": "headbutt",
+    "name": "Headbutt",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal 9 damage. Put a card from your discard pile on top of your draw pile.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 9, "target": "enemy"},
+      {"action_type": "add_card_to_pile", "pile": "draw", "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 12, "target": "enemy"},
+        {"action_type": "add_card_to_pile", "pile": "draw", "target": "self"}
+      ],
+      "description": "Deal 12 damage. Put a card from your discard pile on top of your draw pile."
+    }
+  },
+  {
+    "id": "iron_wave",
+    "name": "Iron Wave",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Gain 5 Block. Deal 5 damage.",
+    "actions": [
+      {"action_type": "gain_block", "value": 5, "target": "self"},
+      {"action_type": "deal_damage", "value": 5, "target": "enemy"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 7, "target": "self"},
+        {"action_type": "deal_damage", "value": 7, "target": "enemy"}
+      ],
+      "description": "Gain 7 Block. Deal 7 damage."
+    }
+  },
+  {
+    "id": "pommel_strike",
+    "name": "Pommel Strike",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal 9 damage. Draw 1 card.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 9, "target": "enemy"},
+      {"action_type": "draw_cards", "value": 1}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 10, "target": "enemy"},
+        {"action_type": "draw_cards", "value": 2}
+      ],
+      "description": "Deal 10 damage. Draw 2 cards."
+    }
+  },
+  {
+    "id": "sword_boomerang",
+    "name": "Sword Boomerang",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal 3 damage to a random enemy 3 times.",
+    "actions": [
+      {"action_type": "repeat", "times": 3, "children": [
+        {"action_type": "deal_damage", "value": 3, "target": "random_enemy"}
+      ]}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "repeat", "times": 4, "children": [
+          {"action_type": "deal_damage", "value": 3, "target": "random_enemy"}
+        ]}
+      ],
+      "description": "Deal 3 damage to a random enemy 4 times."
+    }
+  },
+  {
+    "id": "thunderclap",
+    "name": "Thunderclap",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "ALL_ENEMIES",
+    "description": "Deal 4 damage to ALL enemies. Apply 1 Vulnerable to ALL enemies.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 4, "target": "all_enemies"},
+      {"action_type": "apply_status", "value": 1, "target": "all_enemies", "status_name": "Vulnerable"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 7, "target": "all_enemies"},
+        {"action_type": "apply_status", "value": 1, "target": "all_enemies", "status_name": "Vulnerable"}
+      ],
+      "description": "Deal 7 damage to ALL enemies. Apply 1 Vulnerable to ALL enemies."
+    }
+  },
+  {
+    "id": "twin_strike",
+    "name": "Twin Strike",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal 5 damage twice.",
+    "actions": [
+      {"action_type": "repeat", "times": 2, "children": [
+        {"action_type": "deal_damage", "value": 5, "target": "enemy"}
+      ]}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "repeat", "times": 2, "children": [
+          {"action_type": "deal_damage", "value": 7, "target": "enemy"}
+        ]}
+      ],
+      "description": "Deal 7 damage twice."
+    }
+  },
+  {
+    "id": "wild_strike",
+    "name": "Wild Strike",
+    "type": "ATTACK",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal 12 damage. Shuffle a Wound into your draw pile.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 12, "target": "enemy"},
+      {"action_type": "shuffle_into_draw", "card_id": "wound"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 17, "target": "enemy"},
+        {"action_type": "shuffle_into_draw", "card_id": "wound"}
+      ],
+      "description": "Deal 17 damage. Shuffle a Wound into your draw pile."
+    }
+  },
+  {
+    "id": "shrug_it_off",
+    "name": "Shrug It Off",
+    "type": "SKILL",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Gain 8 Block. Draw 1 card.",
+    "actions": [
+      {"action_type": "gain_block", "value": 8, "target": "self"},
+      {"action_type": "draw_cards", "value": 1}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 11, "target": "self"},
+        {"action_type": "draw_cards", "value": 1}
+      ],
+      "description": "Gain 11 Block. Draw 1 card."
+    }
+  },
+  {
+    "id": "true_grit",
+    "name": "True Grit",
+    "type": "SKILL",
+    "rarity": "COMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Gain 7 Block. Exhaust a random card from your hand.",
+    "actions": [
+      {"action_type": "gain_block", "value": 7, "target": "self"},
+      {"action_type": "exhaust_cards", "value": 1, "target": "self", "condition": "random"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_block", "value": 9, "target": "self"},
+        {"action_type": "exhaust_cards", "value": 1, "target": "self", "condition": "random"}
+      ],
+      "description": "Gain 9 Block. Exhaust a random card from your hand."
+    }
+  },
+  {
+    "id": "warcry",
+    "name": "Warcry",
+    "type": "SKILL",
+    "rarity": "COMMON",
+    "cost": 0,
+    "target": "NONE",
+    "description": "Draw 1 card. Put a card from your hand on top of your draw pile. Exhaust.",
+    "exhaust": true,
+    "actions": [
+      {"action_type": "draw_cards", "value": 1},
+      {"action_type": "add_card_to_pile", "pile": "draw", "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "draw_cards", "value": 2},
+        {"action_type": "add_card_to_pile", "pile": "draw", "target": "self"}
+      ],
+      "description": "Draw 2 cards. Put a card from your hand on top of your draw pile. Exhaust."
+    }
+  },
+  {
+    "id": "body_slam",
+    "name": "Body Slam",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "ENEMY",
+    "description": "Deal damage equal to your current Block.",
+    "actions": [
+      {"action_type": "deal_damage", "value": -1, "target": "enemy", "condition": "use_block_as_damage"}
+    ],
+    "upgrade": {
+      "cost": 0,
+      "description": "Deal damage equal to your current Block."
+    }
+  },
+  {
+    "id": "clothesline",
+    "name": "Clothesline",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Deal 12 damage. Apply 2 Weak.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 12, "target": "enemy"},
+      {"action_type": "apply_status", "value": 2, "target": "enemy", "status_name": "Weak"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 14, "target": "enemy"},
+        {"action_type": "apply_status", "value": 3, "target": "enemy", "status_name": "Weak"}
+      ],
+      "description": "Deal 14 damage. Apply 3 Weak."
+    }
+  },
+  {
+    "id": "heavy_blade",
+    "name": "Heavy Blade",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Deal 14 damage. Strength affects this card 3 times.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 14, "target": "enemy", "condition": "strength_multiplier_3"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 14, "target": "enemy", "condition": "strength_multiplier_5"}
+      ],
+      "description": "Deal 14 damage. Strength affects this card 5 times."
+    }
+  },
+  {
+    "id": "perfected_strike",
+    "name": "Perfected Strike",
+    "type": "ATTACK",
+    "rarity": "UNCOMMON",
+    "cost": 2,
+    "target": "ENEMY",
+    "description": "Deal 6 damage. Deals 2 additional damage for each \"Strike\" card in your deck.",
+    "actions": [
+      {"action_type": "deal_damage", "value": 6, "target": "enemy", "condition": "plus_per_strike_2"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "deal_damage", "value": 6, "target": "enemy", "condition": "plus_per_strike_3"}
+      ],
+      "description": "Deal 6 damage. Deals 3 additional damage for each \"Strike\" card in your deck."
+    }
+  },
+  {
+    "id": "inflame",
+    "name": "Inflame",
+    "type": "POWER",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "Gain 2 Strength.",
+    "actions": [
+      {"action_type": "gain_strength", "value": 2, "target": "self"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "gain_strength", "value": 3, "target": "self"}
+      ],
+      "description": "Gain 3 Strength."
+    }
+  },
+  {
+    "id": "metallicize",
+    "name": "Metallicize",
+    "type": "POWER",
+    "rarity": "UNCOMMON",
+    "cost": 1,
+    "target": "SELF",
+    "description": "At the end of your turn, gain 3 Block.",
+    "actions": [
+      {"action_type": "apply_status", "value": 3, "target": "self", "status_name": "Metallicize"}
+    ],
+    "upgrade": {
+      "actions": [
+        {"action_type": "apply_status", "value": 4, "target": "self", "status_name": "Metallicize"}
+      ],
+      "description": "At the end of your turn, gain 4 Block."
+    }
+  },
+  {
+    "id": "wound",
+    "name": "Wound",
+    "type": "STATUS",
+    "rarity": "SPECIAL",
+    "cost": -2,
+    "target": "NONE",
+    "description": "Unplayable.",
+    "actions": []
+  }
+]

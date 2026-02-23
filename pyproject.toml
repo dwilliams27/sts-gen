@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sts-gen"
+version = "0.1.0"
+description = "AI-powered Slay the Spire mod generator"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0",
+    "typer>=0.9",
+    "jinja2>=3.1",
+    "sqlalchemy>=2.0",
+    "anthropic>=0.40",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+sts-gen = "sts_gen.cli.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sts_gen"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "statistical: slow statistical tests requiring many simulation runs",
+]
+
+[tool.ruff]
+target-version = "py311"
+src = ["src", "tests"]
