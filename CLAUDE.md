@@ -9,7 +9,7 @@ Full architecture and phased plan: `docs/FOUNDATION.md`
 ## Quick Reference
 
 ```bash
-uv run pytest tests/ -v          # Run all tests (267 tests, ~5s)
+uv run pytest tests/ -v          # Run all tests (323 tests, ~5s)
 uv run pytest tests/ -x          # Stop on first failure
 ```
 
@@ -26,6 +26,8 @@ See `COMMAND.md` for simulation commands.
 **IR is the contract.** Everything — vanilla cards, custom cards, enemies — is defined through the same IR primitives. No special-case code for vanilla content. If a card can't be expressed in the IR, extend the IR rather than adding a hack.
 
 **Simulation fidelity matters.** Every mechanic should match real STS behavior. When in doubt, check against the decompiled game source. Wrong simulation results produce wrong balance conclusions.
+
+**Wiki-verify all game data.** Whenever creating anything that references data from the base game (status effects, cards, enemies, relics, potions, encounters, etc.), the exact values and behaviors MUST be looked up on the Slay the Spire wiki (`slay-the-spire.fandom.com`). Never rely on memory for game-specific numbers, trigger timing, or scaling behavior — always fetch and verify from the wiki first.
 
 **Refactor when needed.** Don't be afraid to rearchitect systems, files, or components when they won't work well with new features. A bit of tech debt is fine, but when a system is clearly fighting the new requirements, take the time to refactor rather than piling hacks on top. This should be a considered decision, not the first resort — but also not avoided out of inertia.
 
@@ -58,11 +60,12 @@ src/sts_gen/
       targeting.py             #   resolve_targets
 
     interpreter.py             # ActionNode tree -> mechanics dispatch (dispatch table pattern)
+    triggers.py                # TriggerDispatcher — fires status triggers generically
     runner.py                  # EnemyAI, CombatSimulator, BatchRunner
     telemetry.py               # BattleTelemetry, RunTelemetry dataclasses
 
     content/
-      registry.py              # ContentRegistry — loads and serves cards + enemies
+      registry.py              # ContentRegistry — loads and serves cards, enemies, status defs
 
     play_agents/
       base.py                  # PlayAgent ABC
@@ -72,8 +75,9 @@ data/vanilla/
   ironclad_cards.json          # 80 Ironclad cards in IR format (all wiki-verified)
   enemies.json                 # 25 Act 1 enemies (wiki-verified)
   encounters.json              # Act 1 encounter compositions (easy/normal/elite/boss pools)
+  status_effects.json          # 16 status effect definitions (all wiki-verified)
 
-tests/                         # Mirrors src/ structure, 267 tests
+tests/                         # Mirrors src/ structure, 323 tests
 ```
 
 ## Phase 2 Plan
@@ -94,7 +98,7 @@ Full plan: `docs/PHASE2.md`
 - [x] 2A: Interpreter extensions (3 new ActionTypes, 2 new conditions, 2 new damage conditions, play restrictions, exhaust-all, X-cost REPEAT, ethereal/innate/retain)
 - [x] 2B: Full Ironclad card pool (80 cards, wiki-verified: 3 basic + 20 common + 36 uncommon + 16 rare + 5 status)
 - [x] 2C: Full Act 1 enemy pool (25 enemies + encounters, wiki-verified)
-- [ ] 2D: Status trigger system
+- [x] 2D: Status trigger system
 - [ ] 2E: Relics + potions
 - [ ] 2F: Map generator + run manager
 - [ ] 2G: HeuristicAgent
@@ -104,7 +108,7 @@ Full plan: `docs/PHASE2.md`
 
 - HeuristicAgent (only RandomAgent exists)
 - Map generation, run manager, rewards, shops, relics, potions in sim
-- Status trigger system (Metallicize/Ritual are hardcoded, power cards' trigger-based effects don't work generically yet)
+- ~~Status trigger system~~ (DONE: TriggerDispatcher + 16 wiki-verified status definitions fire generically)
 - UpgradeDefinition now supports exhaust/innate overrides (Limit Break+, Brutality+)
 - Some cards are simplified (marked [SIMPLIFIED] in description): Armaments, Dual Wield, Rampage, Blood for Blood, Searing Blow, Feed, Fiend Fire, Reaper, Exhume, Second Wind, etc.
 - Enemy reactive hooks (Enrage, Sharp Hide, Curl Up, Angry, split, escape, mode shift, sleep/wake) are implemented directly in runner.py — not yet generalized through the trigger system

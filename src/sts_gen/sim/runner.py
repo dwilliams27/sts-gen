@@ -15,6 +15,7 @@ from typing import Any, TYPE_CHECKING
 
 from sts_gen.ir.actions import ActionNode
 from sts_gen.ir.cards import CardTarget, CardType
+from sts_gen.ir.status_effects import StatusTrigger
 from sts_gen.sim.core.entities import Enemy, Player
 from sts_gen.sim.core.game_state import BattleState, CardInstance, CardPiles
 from sts_gen.sim.core.rng import GameRNG
@@ -23,6 +24,7 @@ from sts_gen.sim.mechanics.block import gain_block
 from sts_gen.sim.mechanics.damage import deal_damage
 from sts_gen.sim.mechanics.card_piles import draw_cards
 from sts_gen.sim.mechanics.status_effects import apply_status, decay_statuses, has_status
+from sts_gen.sim.triggers import TriggerDispatcher
 
 from sts_gen.sim.play_agents.base import PlayAgent
 from sts_gen.sim.play_agents.random_agent import RandomAgent
@@ -587,6 +589,7 @@ class CombatSimulator:
         self.interpreter = interpreter
         self.agent = agent
         self.enemy_ai = EnemyAI(interpreter)
+        self.trigger_dispatcher = TriggerDispatcher(interpreter, registry.status_defs)
 
     def run_combat(self, battle: BattleState) -> BattleTelemetry:
         """Run a combat to completion, returning telemetry."""
@@ -615,10 +618,20 @@ class CombatSimulator:
 
         enemy_moves_per_turn: list[list[str]] = []
 
+        td = self.trigger_dispatcher
+        has_corruption = lambda: has_status(battle.player, "Corruption")
+
         # Main combat loop
         while not battle.is_over and battle.turn < _MAX_TURNS:
-            # Start turn
-            battle.start_turn()
+            # Check Barricade: skip block clear if player has it
+            skip_block_clear = has_status(battle.player, "Barricade")
+            battle.start_turn(clear_block=not skip_block_clear)
+
+            # Fire ON_TURN_START triggers on player (Demon Form, Brutality, Berserk)
+            td.fire(battle.player, StatusTrigger.ON_TURN_START, battle, "player")
+
+            if battle.is_over:
+                break
 
             # Determine enemy intents
             turn_moves: list[str] = []
@@ -632,7 +645,13 @@ class CombatSimulator:
             enemy_moves_per_turn.append(turn_moves)
 
             # Draw cards
-            draw_cards(battle, 5)
+            drawn_cards = draw_cards(battle, 5)
+
+            # Fire ON_STATUS_DRAWN for each STATUS/CURSE drawn (Evolve, Fire Breathing)
+            self._fire_on_status_drawn(battle, drawn_cards)
+
+            if battle.is_over:
+                break
 
             # Player action loop
             while not battle.is_over:
@@ -645,12 +664,21 @@ class CombatSimulator:
                 card_instance, card_def, chosen_target = choice
 
                 block_before = battle.player.block
+                player_hp_before = battle.player.current_hp
+                exhaust_count_before = len(battle.card_piles.exhaust)
                 enemy_hp_before = {
                     id(e): e.current_hp for e in battle.enemies
                 }
 
+                # Corruption: skills cost 0 and exhaust
+                force_exhaust = False
+                if has_corruption() and card_def.type == CardType.SKILL:
+                    force_exhaust = True
+                    card_instance.cost_override = 0
+
                 self.interpreter.play_card(
                     card_def, battle, card_instance, chosen_target=chosen_target,
+                    force_exhaust=force_exhaust,
                 )
 
                 total_cards_played += 1
@@ -661,9 +689,6 @@ class CombatSimulator:
                 block_delta = max(0, battle.player.block - block_before)
                 total_block_gained += block_delta
 
-                enemy_hp_after = sum(
-                    e.current_hp for e in battle.enemies if not e.is_dead
-                )
                 total_damage_dealt += max(
                     0,
                     sum(enemy_hp_before.values()) - sum(
@@ -671,7 +696,30 @@ class CombatSimulator:
                     ),
                 )
 
-                # Post-card-play hooks
+                # --- Trigger-based post-card-play hooks ---
+
+                # ON_ATTACK_PLAYED (Rage)
+                if card_def.type == CardType.ATTACK:
+                    td.fire(battle.player, StatusTrigger.ON_ATTACK_PLAYED, battle, "player")
+
+                # ON_CARD_EXHAUSTED (Dark Embrace, Feel No Pain)
+                exhaust_count_after = len(battle.card_piles.exhaust)
+                new_exhausts = exhaust_count_after - exhaust_count_before
+                for _ in range(new_exhausts):
+                    if battle.is_over:
+                        break
+                    td.fire(battle.player, StatusTrigger.ON_CARD_EXHAUSTED, battle, "player")
+
+                # ON_BLOCK_GAINED (Juggernaut)
+                if block_delta > 0:
+                    td.fire(battle.player, StatusTrigger.ON_BLOCK_GAINED, battle, "player")
+
+                # ON_HP_LOSS from a card (Rupture)
+                hp_delta = player_hp_before - battle.player.current_hp
+                if hp_delta > 0:
+                    td.fire(battle.player, StatusTrigger.ON_HP_LOSS, battle, "player")
+
+                # Enemy reactive hooks (Enrage, Sharp Hide, Curl Up, etc.)
                 self._post_card_play_hooks(
                     battle, enemy_datas, card_def, enemy_hp_before,
                 )
@@ -684,13 +732,17 @@ class CombatSimulator:
             # End turn — handle ethereal/retain before discarding
             self._end_turn_card_handling(battle)
 
-            # Remove entangled at end of player turn (decay handles it)
-            decay_statuses(battle.player)
+            # Decay player statuses (vuln, weak, frail, entangled, temporary statuses)
+            decay_statuses(battle.player, self.registry.status_defs)
 
-            # Player Metallicize: gain block at end of turn
-            metallicize_stacks = battle.player.status_effects.get("Metallicize", 0)
-            if metallicize_stacks > 0:
-                battle.player.block += metallicize_stacks
+            # Fire ON_TURN_END on player (Metallicize, Combust)
+            td.fire(battle.player, StatusTrigger.ON_TURN_END, battle, "player")
+
+            # ON_HP_LOSS from Combust (triggers Rupture)
+            # Check if Combust caused HP loss
+            # (Combust fires lose_hp which is direct HP loss from a power,
+            #  but in real STS, Combust does trigger Rupture)
+            # This is handled by the turn-end trigger itself.
 
             if battle.is_over:
                 break
@@ -703,19 +755,28 @@ class CombatSimulator:
                 # Track HP before Lagavulin sleep check
                 hp_before_enemy_turn = enemy.current_hp
 
-                # Ritual: grant strength each turn before acting
-                ritual_stacks = enemy.status_effects.get("Ritual", 0)
-                if ritual_stacks > 0:
-                    apply_status(enemy, "strength", ritual_stacks)
+                # Fire ON_TURN_START on enemy (currently no enemy ON_TURN_START triggers)
+                td.fire(enemy, StatusTrigger.ON_TURN_START, battle, str(i))
 
-                self.enemy_ai.execute_intent(enemy, i, battle)
+                damage_dealt_to_player = self.enemy_ai.execute_intent(enemy, i, battle)
 
-                # Enemy Metallicize: gain block at end of enemy turn
-                metallicize = enemy.status_effects.get("Metallicize", 0)
-                if metallicize > 0:
-                    enemy.block += metallicize
+                # Fire ON_ATTACKED on player when enemy deals attack damage
+                if damage_dealt_to_player > 0:
+                    move_type = getattr(enemy, "_current_move_type", "")
+                    if move_type in ("attack", "attack_defend"):
+                        hits = enemy.intent_hits or 1
+                        for _ in range(hits):
+                            if battle.is_over:
+                                break
+                            td.fire(
+                                battle.player, StatusTrigger.ON_ATTACKED,
+                                battle, "player", attacker_idx=i,
+                            )
 
-                decay_statuses(enemy)
+                # Fire ON_TURN_END on enemy (Ritual, Metallicize)
+                td.fire(enemy, StatusTrigger.ON_TURN_END, battle, str(i))
+
+                decay_statuses(enemy, self.registry.status_defs)
 
             battle._check_battle_over()
 
@@ -736,6 +797,76 @@ class CombatSimulator:
             cards_played_by_id=cards_played_by_id,
             enemy_moves_per_turn=enemy_moves_per_turn,
         )
+
+    # ------------------------------------------------------------------
+    # Status trigger helpers
+    # ------------------------------------------------------------------
+
+    def _fire_on_status_drawn(
+        self,
+        battle: BattleState,
+        drawn_cards: list[CardInstance],
+    ) -> None:
+        """Fire ON_STATUS_DRAWN triggers for STATUS/CURSE cards drawn.
+
+        Evolve triggers on STATUS cards only.
+        Fire Breathing triggers on both STATUS and CURSE cards.
+        We fire a single ON_STATUS_DRAWN event per qualifying card; the
+        TriggerDispatcher iterates all statuses with that trigger.
+        """
+        for card_inst in drawn_cards:
+            if battle.is_over:
+                break
+            card_def = self.registry.get_card(card_inst.card_id)
+            if card_def is None:
+                continue
+
+            is_status = card_def.type == CardType.STATUS
+            is_curse = card_def.type == CardType.CURSE
+
+            if is_status or is_curse:
+                # Fire Breathing triggers on both; Evolve only on STATUS.
+                # The dispatcher fires ALL statuses with ON_STATUS_DRAWN trigger.
+                # We need to differentiate: Evolve should only fire on STATUS.
+                # We handle this by checking inside _fire_selective_status_drawn.
+                self._fire_selective_status_drawn(battle, is_status, is_curse)
+
+    def _fire_selective_status_drawn(
+        self,
+        battle: BattleState,
+        is_status: bool,
+        is_curse: bool,
+    ) -> None:
+        """Fire ON_STATUS_DRAWN selectively based on card type.
+
+        Evolve triggers only on STATUS cards.
+        Fire Breathing triggers on both STATUS and CURSE cards.
+        """
+        td = self.trigger_dispatcher
+        player = battle.player
+
+        for status_id in list(player.status_effects.keys()):
+            stacks = player.status_effects.get(status_id, 0)
+            if stacks <= 0:
+                continue
+
+            defn = td.status_defs.get(status_id)
+            if defn is None:
+                continue
+
+            actions = defn.triggers.get(StatusTrigger.ON_STATUS_DRAWN)
+            if not actions:
+                continue
+
+            # Evolve only triggers on STATUS, not CURSE
+            if status_id == "Evolve" and not is_status:
+                continue
+
+            # Fire Breathing triggers on both STATUS and CURSE
+            # (and any other ON_STATUS_DRAWN status triggers on both by default)
+
+            scaled = td._scale_actions(actions, stacks)
+            self.interpreter.execute_actions(scaled, battle, source="player")
 
     # ------------------------------------------------------------------
     # Post-card-play hooks
@@ -927,6 +1058,7 @@ class CombatSimulator:
     ) -> list[tuple[CardInstance, CardDefinition]]:
         """Return cards in hand that the player can afford to play."""
         is_entangled = has_status(battle.player, "entangled")
+        is_corrupted = has_status(battle.player, "Corruption")
 
         playable: list[tuple[CardInstance, CardDefinition]] = []
         for card_inst in battle.card_piles.hand:
@@ -944,6 +1076,10 @@ class CombatSimulator:
                 cost = card_def.upgrade.cost
             else:
                 cost = card_def.cost
+
+            # Corruption: skills cost 0
+            if is_corrupted and card_def.type == CardType.SKILL:
+                cost = 0
 
             if cost == -2:
                 continue
@@ -1116,6 +1252,7 @@ def _worker_run_single(args: tuple) -> RunTelemetry:
     registry = ContentRegistry()
     registry.load_vanilla_cards(cards_json_path)
     registry.load_vanilla_enemies(enemies_json_path)
+    registry.load_vanilla_status_effects()
 
     agent_rng = GameRNG(seed).fork("agent")
     agent = RandomAgent(rng=agent_rng)

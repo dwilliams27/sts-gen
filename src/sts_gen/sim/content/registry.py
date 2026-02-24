@@ -21,12 +21,18 @@ from sts_gen.ir.cards import (
     UpgradeDefinition,
 )
 from sts_gen.ir.content_set import ContentSet
+from sts_gen.ir.status_effects import (
+    StackBehavior,
+    StatusEffectDefinition,
+    StatusTrigger,
+)
 
 # Default paths relative to the project root.
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]  # src/sts_gen/sim/content -> root
 _DEFAULT_CARDS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "ironclad_cards.json"
 _DEFAULT_ENEMIES_PATH = _PROJECT_ROOT / "data" / "vanilla" / "enemies.json"
 _DEFAULT_ENCOUNTERS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "encounters.json"
+_DEFAULT_STATUS_EFFECTS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "status_effects.json"
 
 
 def _parse_action_node(raw: dict[str, Any]) -> ActionNode:
@@ -36,6 +42,26 @@ def _parse_action_node(raw: dict[str, Any]) -> ActionNode:
         raw = dict(raw)
         raw["children"] = [_parse_action_node(c) for c in children]
     return ActionNode(**raw)
+
+
+def _parse_status_effect_definition(raw: dict[str, Any]) -> StatusEffectDefinition:
+    """Parse a raw JSON dict into a StatusEffectDefinition."""
+    triggers: dict[StatusTrigger, list[ActionNode]] = {}
+    for trigger_key, actions_raw in raw.get("triggers", {}).items():
+        trigger = StatusTrigger(trigger_key)
+        actions = [_parse_action_node(a) for a in actions_raw]
+        triggers[trigger] = actions
+
+    return StatusEffectDefinition(
+        id=raw["id"],
+        name=raw["name"],
+        description=raw["description"],
+        is_debuff=raw["is_debuff"],
+        stack_behavior=StackBehavior(raw["stack_behavior"]),
+        triggers=triggers,
+        decay_per_turn=raw.get("decay_per_turn", 0),
+        min_stacks=raw.get("min_stacks", 0),
+    )
 
 
 def _parse_card_definition(raw: dict[str, Any]) -> CardDefinition:
@@ -99,6 +125,7 @@ class ContentRegistry:
         self.cards: dict[str, CardDefinition] = {}
         self.enemies: dict[str, dict[str, Any]] = {}
         self.encounters: dict[str, dict[str, Any]] = {}
+        self.status_defs: dict[str, StatusEffectDefinition] = {}
 
     # ------------------------------------------------------------------
     # Vanilla content loading
@@ -162,6 +189,32 @@ class ContentRegistry:
 
         with open(path) as f:
             self.encounters = json.load(f)
+
+    def load_vanilla_status_effects(self, path: str | Path | None = None) -> None:
+        """Load vanilla status effect definitions from a JSON file.
+
+        Parameters
+        ----------
+        path:
+            Path to the JSON file.  Defaults to
+            ``data/vanilla/status_effects.json`` relative to the project root.
+        """
+        if path is None:
+            path = _DEFAULT_STATUS_EFFECTS_PATH
+        path = Path(path)
+
+        with open(path) as f:
+            raw_defs: list[dict[str, Any]] = json.load(f)
+
+        for raw in raw_defs:
+            if "_section" in raw:
+                continue  # Skip organizational section markers
+            defn = _parse_status_effect_definition(raw)
+            self.status_defs[defn.id] = defn
+
+    def get_status_def(self, status_id: str) -> StatusEffectDefinition | None:
+        """Return the :class:`StatusEffectDefinition` for *status_id*, or ``None``."""
+        return self.status_defs.get(status_id)
 
     # ------------------------------------------------------------------
     # Custom content loading

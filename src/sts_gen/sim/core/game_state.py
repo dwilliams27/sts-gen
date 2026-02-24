@@ -186,16 +186,17 @@ class BattleState(BaseModel):
 
     # -- turn lifecycle ------------------------------------------------------
 
-    def start_turn(self, energy: int | None = None) -> None:
+    def start_turn(self, energy: int | None = None, clear_block: bool = True) -> None:
         """Begin a new player turn.
 
         * Increments ``turn``.
-        * Resets player block.
+        * Resets player block (unless *clear_block* is ``False``, e.g. Barricade).
         * Refills energy to ``max_energy`` (or a custom *energy* value).
         * Resets ``actions_this_turn``.
         """
         self.turn += 1
-        self.player.clear_block()
+        if clear_block:
+            self.player.clear_block()
         self.player.energy = (
             energy if energy is not None else self.player.max_energy
         )

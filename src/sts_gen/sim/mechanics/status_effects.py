@@ -22,10 +22,24 @@ if TYPE_CHECKING:
 _BUILTIN_DECAY_STATUSES = frozenset({"vulnerable", "weak", "frail", "entangled"})
 
 # Built-in statuses that are permanent (no decay) -- strength, dexterity,
-# Metallicize, Ritual.  They persist until explicitly removed or modified.
+# and all power-card statuses.  They persist until explicitly removed or modified.
 _BUILTIN_PERMANENT_STATUSES = frozenset({
     "strength", "dexterity", "Metallicize", "Ritual",
     "Enrage", "Angry", "Thievery", "Sharp Hide", "Artifact",
+    "Demon Form", "Brutality", "Berserk", "Combust",
+    "Dark Embrace", "Feel No Pain", "Evolve", "Fire Breathing",
+    "Juggernaut", "Rupture", "Barricade", "Corruption",
+})
+
+# Statuses that are purely passive modifiers applied inline by combat math
+# (calculate_damage, gain_block).  They have NO triggered actions.
+_PASSIVE_MODIFIERS = frozenset({
+    "strength", "dexterity", "vulnerable", "weak", "frail", "entangled",
+})
+
+# Statuses that are removed entirely (all stacks) at end of turn.
+_TEMPORARY_STATUSES = frozenset({
+    "Rage", "Flame Barrier",
 })
 
 
@@ -75,8 +89,10 @@ def decay_statuses(entity: Entity, status_defs: dict[str, StatusEffectDefinition
     """Decay status effects at end of turn.
 
     Built-in statuses (vulnerable, weak, frail) lose 1 stack per turn.
-    Custom statuses use their ``decay_per_turn`` from their definition.
-    Permanent statuses (strength, dexterity) do not decay.
+    Temporary statuses (Rage, Flame Barrier) are removed entirely.
+    Custom statuses use their ``decay_per_turn`` from their definition;
+    ``decay_per_turn == -1`` means remove all stacks at end of turn.
+    Permanent statuses (strength, dexterity, powers) do not decay.
 
     Statuses that reach 0 or fewer stacks are removed.
 
@@ -91,6 +107,11 @@ def decay_statuses(entity: Entity, status_defs: dict[str, StatusEffectDefinition
     to_remove: list[str] = []
 
     for status_id, stacks in list(entity.status_effects.items()):
+        # Temporary statuses: remove entirely at end of turn
+        if status_id in _TEMPORARY_STATUSES:
+            to_remove.append(status_id)
+            continue
+
         # Skip permanent built-in statuses
         if status_id in _BUILTIN_PERMANENT_STATUSES:
             continue
@@ -107,7 +128,10 @@ def decay_statuses(entity: Entity, status_defs: dict[str, StatusEffectDefinition
         # Custom status -- use definition
         if status_defs and status_id in status_defs:
             defn = status_defs[status_id]
-            if defn.decay_per_turn > 0:
+            if defn.decay_per_turn == -1:
+                # Sentinel: remove all stacks at end of turn
+                to_remove.append(status_id)
+            elif defn.decay_per_turn > 0:
                 new_stacks = stacks - defn.decay_per_turn
                 if new_stacks <= defn.min_stacks:
                     to_remove.append(status_id)
@@ -147,8 +171,8 @@ def trigger_status(
     list[ActionNode]
         Action nodes to execute, or empty list if no actions for this trigger.
     """
-    # Built-in statuses are passive -- no triggered actions
-    if status_id in _BUILTIN_DECAY_STATUSES or status_id in _BUILTIN_PERMANENT_STATUSES:
+    # Passive modifiers (str, dex, vuln, weak, frail, entangled) have no triggers
+    if status_id in _PASSIVE_MODIFIERS:
         return []
 
     # Entity must actually have the status

@@ -1,0 +1,237 @@
+[
+  {"_section": "ON_TURN_START powers"},
+
+  {
+    "id": "Demon Form",
+    "name": "Demon Form",
+    "description": "At the start of your turn, gain {stacks} Strength.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_TURN_START": [
+        {"action_type": "gain_strength", "value": 1, "target": "self", "condition": "per_stack"}
+      ]
+    }
+  },
+
+  {
+    "id": "Brutality",
+    "name": "Brutality",
+    "description": "At the start of your turn, lose {stacks} HP and draw {stacks} card(s).",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_TURN_START": [
+        {"action_type": "lose_hp", "value": 1, "target": "self", "condition": "per_stack"},
+        {"action_type": "draw_cards", "value": 1, "condition": "per_stack"}
+      ]
+    }
+  },
+
+  {
+    "id": "Berserk",
+    "name": "Berserk",
+    "description": "At the start of your turn, gain {stacks} Energy.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_TURN_START": [
+        {"action_type": "gain_energy", "value": 1, "condition": "per_stack"}
+      ]
+    }
+  },
+
+  {
+    "id": "Ritual",
+    "name": "Ritual",
+    "description": "At the end of your turn, gain {stacks} Strength.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_TURN_END": [
+        {"action_type": "gain_strength", "value": 1, "target": "self", "condition": "per_stack"}
+      ]
+    }
+  },
+
+  {"_section": "ON_TURN_END powers"},
+
+  {
+    "id": "Metallicize",
+    "name": "Metallicize",
+    "description": "At the end of your turn, gain {stacks} Block.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_TURN_END": [
+        {"action_type": "gain_block", "value": 1, "target": "self", "condition": "per_stack"}
+      ]
+    }
+  },
+
+  {
+    "id": "Combust",
+    "name": "Combust",
+    "description": "At the end of your turn, lose {stacks} HP and deal {damage} damage to ALL enemies.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_TURN_END": [
+        {"action_type": "lose_hp", "value": 1, "target": "self", "condition": "per_stack"},
+        {"action_type": "deal_damage", "value": 5, "target": "all_enemies", "condition": "per_stack_no_strength"}
+      ]
+    }
+  },
+
+  {"_section": "ON_CARD_EXHAUSTED powers"},
+
+  {
+    "id": "Dark Embrace",
+    "name": "Dark Embrace",
+    "description": "Whenever a card is Exhausted, draw {stacks} card(s).",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_CARD_EXHAUSTED": [
+        {"action_type": "draw_cards", "value": 1, "condition": "per_stack"}
+      ]
+    }
+  },
+
+  {
+    "id": "Feel No Pain",
+    "name": "Feel No Pain",
+    "description": "Whenever a card is Exhausted, gain {stacks} Block.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_CARD_EXHAUSTED": [
+        {"action_type": "gain_block", "value": 1, "target": "self", "condition": "per_stack"}
+      ]
+    }
+  },
+
+  {"_section": "ON_ATTACK_PLAYED powers"},
+
+  {
+    "id": "Rage",
+    "name": "Rage",
+    "description": "Whenever you play an Attack this turn, gain {stacks} Block.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": -1,
+    "triggers": {
+      "ON_ATTACK_PLAYED": [
+        {"action_type": "gain_block", "value": 1, "target": "self", "condition": "per_stack_raw"}
+      ]
+    }
+  },
+
+  {"_section": "ON_STATUS_DRAWN powers"},
+
+  {
+    "id": "Evolve",
+    "name": "Evolve",
+    "description": "Whenever you draw a Status card, draw {stacks} card(s).",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_STATUS_DRAWN": [
+        {"action_type": "draw_cards", "value": 1, "condition": "per_stack"}
+      ]
+    }
+  },
+
+  {
+    "id": "Fire Breathing",
+    "name": "Fire Breathing",
+    "description": "Whenever you draw a Status or Curse card, deal {stacks} damage to ALL enemies.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_STATUS_DRAWN": [
+        {"action_type": "deal_damage", "value": 1, "target": "all_enemies", "condition": "per_stack_no_strength"}
+      ]
+    }
+  },
+
+  {"_section": "ON_ATTACKED powers"},
+
+  {
+    "id": "Flame Barrier",
+    "name": "Flame Barrier",
+    "description": "Whenever you are attacked this turn, deal {stacks} damage back.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": -1,
+    "triggers": {
+      "ON_ATTACKED": [
+        {"action_type": "deal_damage", "value": 1, "target": "attacker", "condition": "per_stack_no_strength"}
+      ]
+    }
+  },
+
+  {"_section": "ON_BLOCK_GAINED powers"},
+
+  {
+    "id": "Juggernaut",
+    "name": "Juggernaut",
+    "description": "Whenever you gain Block, deal {stacks} damage to a random enemy.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_BLOCK_GAINED": [
+        {"action_type": "deal_damage", "value": 1, "target": "random", "condition": "per_stack_no_strength"}
+      ]
+    }
+  },
+
+  {"_section": "ON_HP_LOSS powers"},
+
+  {
+    "id": "Rupture",
+    "name": "Rupture",
+    "description": "Whenever you lose HP from a card, gain {stacks} Strength.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 0,
+    "triggers": {
+      "ON_HP_LOSS": [
+        {"action_type": "gain_strength", "value": 1, "target": "self", "condition": "per_stack"}
+      ]
+    }
+  },
+
+  {"_section": "PASSIVE powers"},
+
+  {
+    "id": "Barricade",
+    "name": "Barricade",
+    "description": "Block is not removed at the start of your turn.",
+    "is_debuff": false,
+    "stack_behavior": "NONE",
+    "decay_per_turn": 0,
+    "triggers": {}
+  },
+
+  {
+    "id": "Corruption",
+    "name": "Corruption",
+    "description": "Skills cost 0. Whenever you play a Skill, Exhaust it.",
+    "is_debuff": false,
+    "stack_behavior": "NONE",
+    "decay_per_turn": 0,
+    "triggers": {}
+  }
+]

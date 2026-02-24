@@ -132,6 +132,7 @@ class ActionInterpreter:
         battle: BattleState,
         card_instance: CardInstance,
         chosen_target: int | None = None,
+        force_exhaust: bool = False,
     ) -> None:
         """Play a card: spend energy, execute its actions, then dispose of it.
 
@@ -212,7 +213,7 @@ class ActionInterpreter:
             ):
                 effective_exhaust = card_def.upgrade.exhaust
 
-            if effective_exhaust or "exhaust" in card_def.keywords:
+            if force_exhaust or effective_exhaust or "exhaust" in card_def.keywords:
                 exhaust_card(battle, card_instance)
             else:
                 discard_card(battle, card_instance)
@@ -263,6 +264,26 @@ class ActionInterpreter:
         # Handle special conditions on damage nodes
         condition = node.condition or ""
 
+        # no_strength: deal raw damage without strength modifier (Combust, Fire Breathing, etc.)
+        if condition == "no_strength":
+            from sts_gen.sim.mechanics.damage import _resolve_entity
+            # Handle numeric string targets (e.g. "0" for enemy index from Flame Barrier)
+            if not targets and target_spec not in ("self", "none"):
+                try:
+                    idx = int(target_spec)
+                    if 0 <= idx < len(battle.enemies) and not battle.enemies[idx].is_dead:
+                        targets = [idx]
+                except (ValueError, IndexError):
+                    pass
+            for target_idx in targets:
+                if battle.is_over:
+                    break
+                target_entity = _resolve_entity(battle, target_idx)
+                if target_entity.is_dead:
+                    continue
+                target_entity.take_damage(base_damage)
+            return
+
         if condition == "use_block_as_damage":
             # Body Slam: use current block as base damage
             source_entity = self._resolve_source_entity(battle, source)
@@ -312,6 +333,18 @@ class ActionInterpreter:
     ) -> None:
         amount = self._effective_value(node)
         target_spec = node.target or "self"
+        condition = node.condition or ""
+
+        # raw: bypass dex/frail modifiers (Rage)
+        if condition == "raw":
+            if target_spec in ("self", "default"):
+                source_entity = self._resolve_source_entity(battle, source)
+                source_entity.block += max(0, amount)
+            else:
+                targets = resolve_targets(battle, source, target_spec, chosen_target=chosen_target)
+                for idx in targets:
+                    battle.enemies[idx].block += max(0, amount)
+            return
 
         if target_spec in ("self", "default"):
             source_entity = self._resolve_source_entity(battle, source)

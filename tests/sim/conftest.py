@@ -17,6 +17,7 @@ def registry() -> ContentRegistry:
     reg = ContentRegistry()
     reg.load_vanilla_cards()
     reg.load_vanilla_enemies()
+    reg.load_vanilla_status_effects()
     return reg
 
 
