@@ -60,6 +60,9 @@ class UpgradeDefinition(BaseModel):
     innate: bool | None = None
     """If set, overrides the base card's innate flag on upgrade."""
 
+    on_exhaust: list[ActionNode] | None = None
+    """If set, overrides the base card's on_exhaust actions on upgrade."""
+
 
 class CardDefinition(BaseModel):
     """Complete definition of a single card in the IR."""
@@ -105,6 +108,9 @@ class CardDefinition(BaseModel):
 
     retain: bool = False
     """If True the card is not discarded at end of turn."""
+
+    on_exhaust: list[ActionNode] = []
+    """Actions to execute when this card is exhausted (e.g. Sentinel's energy gain)."""
 
     play_restriction: str | None = None
     """Condition string that must evaluate to True for this card to be playable.

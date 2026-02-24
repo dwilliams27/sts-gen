@@ -596,3 +596,169 @@ class TestStatusEffectRegistry:
         defn = registry.get_status_def("Flame Barrier")
         assert defn is not None
         assert defn.decay_per_turn == -1
+
+
+# ===================================================================
+# Card-level on_exhaust (Sentinel)
+# ===================================================================
+
+class TestSentinelOnExhaust:
+    """Wiki: Gain 5 Block. If this card is Exhausted, gain 2 Energy.
+    Upgraded: Gain 8 Block. If Exhausted, gain 3 Energy."""
+
+    def test_sentinel_card_has_on_exhaust(self, registry):
+        card_def = registry.get_card("sentinel")
+        assert card_def is not None
+        assert len(card_def.on_exhaust) == 1
+        assert card_def.on_exhaust[0].action_type.value == "gain_energy"
+        assert card_def.on_exhaust[0].value == 2
+
+    def test_sentinel_upgrade_has_on_exhaust(self, registry):
+        card_def = registry.get_card("sentinel")
+        assert card_def.upgrade is not None
+        assert card_def.upgrade.on_exhaust is not None
+        assert len(card_def.upgrade.on_exhaust) == 1
+        assert card_def.upgrade.on_exhaust[0].value == 3
+
+    def test_sentinel_on_exhaust_fires_in_combat(self, registry):
+        """Sentinel exhausted via Corruption should grant 2 energy."""
+        player = _make_player(energy=0)
+        apply_status(player, "Corruption", 1)
+
+        sentinel_inst = CardInstance(card_id="sentinel")
+        enemy = _make_enemy()
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[sentinel_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("sentinel")
+
+        # Corruption: cost 0, force exhaust
+        sentinel_inst.cost_override = 0
+        interp.play_card(card_def, battle, sentinel_inst, force_exhaust=True)
+
+        # Card should be exhausted
+        assert len(battle.card_piles.exhaust) == 1
+        assert battle.card_piles.exhaust[0].card_id == "sentinel"
+
+        # Now simulate what the runner does: execute on_exhaust for newly exhausted cards
+        exhausted_def = registry.cards.get("sentinel")
+        if exhausted_def and exhausted_def.on_exhaust:
+            interp.execute_actions(exhausted_def.on_exhaust, battle, source="player")
+
+        # Sentinel on_exhaust: gain 2 energy
+        assert player.energy == 2
+
+    def test_sentinel_upgraded_on_exhaust(self, registry):
+        """Sentinel+ exhausted should grant 3 energy."""
+        player = _make_player(energy=3)
+
+        sentinel_inst = CardInstance(card_id="sentinel", upgraded=True)
+        enemy = _make_enemy()
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[sentinel_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("sentinel")
+
+        # Force exhaust to trigger on_exhaust
+        interp.play_card(card_def, battle, sentinel_inst, force_exhaust=True)
+        assert len(battle.card_piles.exhaust) == 1
+        # Energy: 3 - 1 (cost) = 2 after playing
+
+        # Simulate runner on_exhaust logic (upgraded path)
+        on_exhaust_actions = card_def.on_exhaust
+        if (
+            sentinel_inst.upgraded
+            and card_def.upgrade is not None
+            and card_def.upgrade.on_exhaust is not None
+        ):
+            on_exhaust_actions = card_def.upgrade.on_exhaust
+        if on_exhaust_actions:
+            interp.execute_actions(on_exhaust_actions, battle, source="player")
+
+        # Upgraded: gain 3 energy. Started with 3, spent 1, gained 3 = 5
+        assert player.energy == 5
+
+    def test_sentinel_on_exhaust_in_full_combat(self, registry):
+        """Full integration: Sentinel with Corruption in a real combat."""
+        player = _make_player(energy=3)
+        apply_status(player, "Corruption", 1)
+
+        sentinel_inst = CardInstance(card_id="sentinel")
+        # Add some strikes so combat can finish
+        cards = [sentinel_inst] + [CardInstance(card_id="strike") for _ in range(5)]
+        enemy = _make_enemy(current_hp=20, max_hp=20)
+
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(draw=cards),
+            rng=GameRNG(42),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        from sts_gen.sim.play_agents.random_agent import RandomAgent
+        agent = RandomAgent(rng=GameRNG(42).fork("agent"))
+        sim = CombatSimulator(registry, interp, agent)
+        tel = sim.run_combat(battle)
+
+        # Sentinel should have been exhausted (Corruption exhausts skills)
+        sentinel_exhausted = any(
+            c.card_id == "sentinel" for c in battle.card_piles.exhaust
+        )
+        assert sentinel_exhausted, "Sentinel should be exhausted by Corruption"
+
+
+# ===================================================================
+# Flame Barrier card applies status
+# ===================================================================
+
+class TestFlameBarrierCard:
+    """Verify the Flame Barrier card applies the Flame Barrier status."""
+
+    def test_card_applies_status(self, registry):
+        player = _make_player()
+        fb_inst = CardInstance(card_id="flame_barrier")
+        enemy = _make_enemy()
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[fb_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("flame_barrier")
+        interp.play_card(card_def, battle, fb_inst)
+
+        # Should have 12 block and 4 stacks of Flame Barrier
+        assert player.block == 12
+        assert get_status_stacks(player, "Flame Barrier") == 4
+
+    def test_upgraded_card_applies_more_stacks(self, registry):
+        player = _make_player()
+        fb_inst = CardInstance(card_id="flame_barrier", upgraded=True)
+        enemy = _make_enemy()
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[fb_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("flame_barrier")
+        interp.play_card(card_def, battle, fb_inst)
+
+        # Upgraded: 16 block, 6 stacks
+        assert player.block == 16
+        assert get_status_stacks(player, "Flame Barrier") == 6

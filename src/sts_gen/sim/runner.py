@@ -665,7 +665,7 @@ class CombatSimulator:
 
                 block_before = battle.player.block
                 player_hp_before = battle.player.current_hp
-                exhaust_count_before = len(battle.card_piles.exhaust)
+                exhaust_ids_before = {id(c) for c in battle.card_piles.exhaust}
                 enemy_hp_before = {
                     id(e): e.current_hp for e in battle.enemies
                 }
@@ -702,12 +702,29 @@ class CombatSimulator:
                 if card_def.type == CardType.ATTACK:
                     td.fire(battle.player, StatusTrigger.ON_ATTACK_PLAYED, battle, "player")
 
-                # ON_CARD_EXHAUSTED (Dark Embrace, Feel No Pain)
-                exhaust_count_after = len(battle.card_piles.exhaust)
-                new_exhausts = exhaust_count_after - exhaust_count_before
-                for _ in range(new_exhausts):
+                # ON_CARD_EXHAUSTED (Dark Embrace, Feel No Pain) + per-card on_exhaust (Sentinel)
+                newly_exhausted = [
+                    c for c in battle.card_piles.exhaust
+                    if id(c) not in exhaust_ids_before
+                ]
+                for exhausted_card in newly_exhausted:
                     if battle.is_over:
                         break
+                    # Per-card on_exhaust actions (Sentinel: gain energy)
+                    exhausted_def = self.registry.cards.get(exhausted_card.card_id)
+                    if exhausted_def:
+                        on_exhaust_actions = exhausted_def.on_exhaust
+                        if (
+                            exhausted_card.upgraded
+                            and exhausted_def.upgrade is not None
+                            and exhausted_def.upgrade.on_exhaust is not None
+                        ):
+                            on_exhaust_actions = exhausted_def.upgrade.on_exhaust
+                        if on_exhaust_actions:
+                            self.interpreter.execute_actions(
+                                on_exhaust_actions, battle, source="player",
+                            )
+                    # Global ON_CARD_EXHAUSTED trigger (Dark Embrace, Feel No Pain)
                     td.fire(battle.player, StatusTrigger.ON_CARD_EXHAUSTED, battle, "player")
 
                 # ON_BLOCK_GAINED (Juggernaut)

@@ -69,6 +69,9 @@ def _parse_card_definition(raw: dict[str, Any]) -> CardDefinition:
     # Parse actions
     actions = [_parse_action_node(a) for a in raw.get("actions", [])]
 
+    # Parse on_exhaust actions if present
+    on_exhaust = [_parse_action_node(a) for a in raw.get("on_exhaust", [])]
+
     # Parse upgrade if present
     upgrade = None
     raw_upgrade = raw.get("upgrade")
@@ -76,12 +79,16 @@ def _parse_card_definition(raw: dict[str, Any]) -> CardDefinition:
         upgrade_actions = None
         if raw_upgrade.get("actions") is not None:
             upgrade_actions = [_parse_action_node(a) for a in raw_upgrade["actions"]]
+        upgrade_on_exhaust = None
+        if raw_upgrade.get("on_exhaust") is not None:
+            upgrade_on_exhaust = [_parse_action_node(a) for a in raw_upgrade["on_exhaust"]]
         upgrade = UpgradeDefinition(
             cost=raw_upgrade.get("cost"),
             actions=upgrade_actions,
             description=raw_upgrade.get("description"),
             exhaust=raw_upgrade.get("exhaust"),
             innate=raw_upgrade.get("innate"),
+            on_exhaust=upgrade_on_exhaust,
         )
 
     return CardDefinition(
@@ -99,6 +106,7 @@ def _parse_card_definition(raw: dict[str, Any]) -> CardDefinition:
         ethereal=raw.get("ethereal", False),
         innate=raw.get("innate", False),
         retain=raw.get("retain", False),
+        on_exhaust=on_exhaust,
         play_restriction=raw.get("play_restriction"),
     )
 

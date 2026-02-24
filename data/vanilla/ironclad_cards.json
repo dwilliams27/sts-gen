@@ -802,15 +802,17 @@
     "rarity": "UNCOMMON",
     "cost": 2,
     "target": "SELF",
-    "description": "Gain 12 Block. Whenever you are attacked this turn, deal 4 damage back. [SIMPLIFIED: reactive damage deferred to 2D]",
+    "description": "Gain 12 Block. Whenever you are attacked this turn, deal 4 damage back.",
     "actions": [
-      {"action_type": "gain_block", "value": 12, "target": "self"}
+      {"action_type": "gain_block", "value": 12, "target": "self"},
+      {"action_type": "apply_status", "value": 4, "target": "self", "status_name": "Flame Barrier"}
     ],
     "upgrade": {
       "actions": [
-        {"action_type": "gain_block", "value": 16, "target": "self"}
+        {"action_type": "gain_block", "value": 16, "target": "self"},
+        {"action_type": "apply_status", "value": 6, "target": "self", "status_name": "Flame Barrier"}
       ],
-      "description": "Gain 16 Block. Whenever you are attacked this turn, deal 6 damage back. [SIMPLIFIED: reactive damage deferred to 2D]"
+      "description": "Gain 16 Block. Whenever you are attacked this turn, deal 6 damage back."
     }
   },
   {
@@ -952,15 +954,21 @@
     "rarity": "UNCOMMON",
     "cost": 1,
     "target": "SELF",
-    "description": "Gain 5 Block. If this card is Exhausted, gain 2 Energy. [SIMPLIFIED: if-exhausted trigger deferred to 2D]",
+    "description": "Gain 5 Block. If this card is Exhausted, gain 2 Energy.",
     "actions": [
       {"action_type": "gain_block", "value": 5, "target": "self"}
+    ],
+    "on_exhaust": [
+      {"action_type": "gain_energy", "value": 2}
     ],
     "upgrade": {
       "actions": [
         {"action_type": "gain_block", "value": 8, "target": "self"}
       ],
-      "description": "Gain 8 Block. If this card is Exhausted, gain 3 Energy. [SIMPLIFIED: if-exhausted trigger deferred to 2D]"
+      "on_exhaust": [
+        {"action_type": "gain_energy", "value": 3}
+      ],
+      "description": "Gain 8 Block. If this card is Exhausted, gain 3 Energy."
     }
   },
   {
