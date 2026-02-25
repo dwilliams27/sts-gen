@@ -9,8 +9,9 @@ Full architecture and phased plan: `docs/FOUNDATION.md`
 ## Quick Reference
 
 ```bash
-uv run pytest tests/ -v          # Run all tests (501 tests, ~6s)
+uv run pytest tests/ -v          # Run all tests (515 tests, ~35s with 10k-run gate)
 uv run pytest tests/ -x          # Stop on first failure
+uv run pytest tests/ -x --ignore=tests/sim/test_full_act1.py  # Fast (~6s, skip integration)
 ```
 
 See `COMMAND.md` for simulation commands.
@@ -85,7 +86,7 @@ data/vanilla/
   relics.json                  # 14 relic definitions (wiki-verified)
   potions.json                 # 11 potion definitions (wiki-verified)
 
-tests/                         # Mirrors src/ structure, 501 tests
+tests/                         # Mirrors src/ structure, 515 tests
 ```
 
 ## Phase 2 Plan
@@ -110,15 +111,19 @@ Full plan: `docs/PHASE2.md`
 - [x] 2E: Relics + potions
 - [x] 2F: Map generator + run manager
 - [x] 2G: HeuristicAgent
-- [ ] 2H: Integration + exit gate
+- [x] 2H: Integration + exit gate
+
+## Phase 2 Results
+
+- 10,000 full Act 1 runs complete error-free in ~30s
+- HeuristicAgent: ~8% Act 1 win rate, 9.5 avg floors, 5.1 avg battles won
+- RandomAgent: 0% win rate, 3.7 avg floors, 1.7 avg battles won
+- 515 tests, all passing
 
 ## What Doesn't Exist Yet
 
-- ~~HeuristicAgent~~ (DONE: priority-based heuristic agent with card play waterfall, tier-list rewards, situational potions, HP-threshold rest/smith)
-- ~~Map generation, run manager, rewards, shops~~ (DONE: MapGenerator + RunManager + rewards + loosely-emulated events/shops)
-- ~~Status trigger system~~ (DONE: TriggerDispatcher + 17 wiki-verified status definitions fire generically)
-- ~~Relics + potions~~ (DONE: RelicDispatcher + 14 relics + 11 potions, all wiki-verified)
 - UpgradeDefinition now supports exhaust/innate overrides (Limit Break+, Brutality+)
 - Some cards are simplified (marked [SIMPLIFIED] in description): Armaments, Dual Wield, Rampage, Blood for Blood, Searing Blow, Fiend Fire, etc.
 - Enemy reactive hooks (Enrage, Sharp Hide, Curl Up, Angry, split, escape, mode shift, sleep/wake) are implemented directly in runner.py — not yet generalized through the trigger system
+- Events/shops are loosely emulated (random outcomes, no real event system or shop UI)
 - LLM agents, balance analysis, mod builder
