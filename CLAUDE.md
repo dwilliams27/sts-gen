@@ -93,6 +93,10 @@ tests/                         # Mirrors src/ structure, 539 tests
 
 Full plan: `docs/PHASE2.md`
 
+## Phases 3-6 Roadmap
+
+Revised ordering and rationale: `docs/ROADMAP.md`
+
 ## Key Naming Conventions
 
 - Entity HP: `current_hp`, `max_hp` (not `hp`)
