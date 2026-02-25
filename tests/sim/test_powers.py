@@ -1036,3 +1036,251 @@ class TestBattleTrance:
         interp.play_card(card_def, battle, bt_inst)
 
         assert len(battle.card_piles.hand) == 4
+
+
+# ===================================================================
+# Reaper — un-simplified
+# ===================================================================
+
+class TestReaper:
+    """Wiki: Deal 4 (5+) damage to ALL enemies. Heal HP equal to
+    unblocked damage dealt. Exhaust."""
+
+    def test_heals_from_unblocked_damage(self, registry):
+        """Two enemies, no block: heal = 4 + 4 = 8."""
+        player = _make_player(max_hp=80, current_hp=60)
+        reaper_inst = CardInstance(card_id="reaper")
+        enemies = [_make_enemy(current_hp=100), _make_enemy(current_hp=100)]
+        battle = BattleState(
+            player=player,
+            enemies=enemies,
+            card_piles=CardPiles(hand=[reaper_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("reaper")
+        interp.play_card(card_def, battle, reaper_inst)
+
+        assert enemies[0].current_hp == 96
+        assert enemies[1].current_hp == 96
+        assert player.current_hp == 68  # 60 + 8
+
+    def test_partial_block_reduces_healing(self, registry):
+        """Enemy with 3 block absorbs 3, only 1 HP lost => heal 1+4=5."""
+        player = _make_player(max_hp=80, current_hp=60)
+        reaper_inst = CardInstance(card_id="reaper")
+        e1 = _make_enemy(current_hp=100)
+        e1.block = 3
+        e2 = _make_enemy(current_hp=100)
+        battle = BattleState(
+            player=player,
+            enemies=[e1, e2],
+            card_piles=CardPiles(hand=[reaper_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("reaper")
+        interp.play_card(card_def, battle, reaper_inst)
+
+        assert e1.current_hp == 99  # 4-3=1 through block
+        assert e2.current_hp == 96
+        assert player.current_hp == 65  # 60 + 1 + 4
+
+    def test_full_block_no_healing(self, registry):
+        """Enemy with 10 block => 0 HP lost => no healing."""
+        player = _make_player(max_hp=80, current_hp=60)
+        reaper_inst = CardInstance(card_id="reaper")
+        enemy = _make_enemy(current_hp=100)
+        enemy.block = 10
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[reaper_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("reaper")
+        interp.play_card(card_def, battle, reaper_inst)
+
+        assert player.current_hp == 60  # No healing
+
+    def test_heal_capped_at_max_hp(self, registry):
+        """Healing doesn't exceed max HP."""
+        player = _make_player(max_hp=80, current_hp=78)
+        reaper_inst = CardInstance(card_id="reaper")
+        enemies = [_make_enemy(current_hp=100), _make_enemy(current_hp=100)]
+        battle = BattleState(
+            player=player,
+            enemies=enemies,
+            card_piles=CardPiles(hand=[reaper_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("reaper")
+        interp.play_card(card_def, battle, reaper_inst)
+
+        assert player.current_hp == 80  # Capped, not 86
+
+    def test_strength_increases_healing(self, registry):
+        """Strength increases damage => increases healing."""
+        player = _make_player(max_hp=80, current_hp=60)
+        apply_status(player, "strength", 2)
+        reaper_inst = CardInstance(card_id="reaper")
+        enemies = [_make_enemy(current_hp=100), _make_enemy(current_hp=100)]
+        battle = BattleState(
+            player=player,
+            enemies=enemies,
+            card_piles=CardPiles(hand=[reaper_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("reaper")
+        interp.play_card(card_def, battle, reaper_inst)
+
+        # 4+2=6 damage each, heal 6+6=12
+        assert enemies[0].current_hp == 94
+        assert player.current_hp == 72
+
+    def test_upgraded_deals_5_base(self, registry):
+        """Reaper+: 5 base damage."""
+        player = _make_player(max_hp=80, current_hp=60)
+        reaper_inst = CardInstance(card_id="reaper", upgraded=True)
+        enemy = _make_enemy(current_hp=100)
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[reaper_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("reaper")
+        interp.play_card(card_def, battle, reaper_inst)
+
+        assert enemy.current_hp == 95
+        assert player.current_hp == 65  # 60 + 5
+
+    def test_card_is_exhausted(self, registry):
+        """Reaper should exhaust after play."""
+        player = _make_player()
+        reaper_inst = CardInstance(card_id="reaper")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(hand=[reaper_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("reaper")
+        interp.play_card(card_def, battle, reaper_inst)
+
+        assert len(battle.card_piles.exhaust) == 1
+        assert battle.card_piles.exhaust[0].card_id == "reaper"
+
+
+# ===================================================================
+# Exhume — un-simplified
+# ===================================================================
+
+class TestExhume:
+    """Wiki: Put a card from your Exhaust pile into your hand. Exhaust."""
+
+    def test_moves_card_from_exhaust_to_hand(self, registry):
+        """Retrieves a card from exhaust pile to hand."""
+        player = _make_player()
+        exhume_inst = CardInstance(card_id="exhume")
+        exhausted_card = CardInstance(card_id="strike")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(
+                hand=[exhume_inst],
+                exhaust=[exhausted_card],
+            ),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("exhume")
+        interp.play_card(card_def, battle, exhume_inst)
+
+        # Strike moved from exhaust to hand
+        assert len(battle.card_piles.hand) == 1
+        assert battle.card_piles.hand[0].card_id == "strike"
+        # Exhume itself went to exhaust (replaces the retrieved card)
+        assert len(battle.card_piles.exhaust) == 1
+        assert battle.card_piles.exhaust[0].card_id == "exhume"
+
+    def test_empty_exhaust_is_noop(self, registry):
+        """Empty exhaust pile => no crash, hand stays empty."""
+        player = _make_player()
+        exhume_inst = CardInstance(card_id="exhume")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(hand=[exhume_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("exhume")
+        interp.play_card(card_def, battle, exhume_inst)
+
+        # No card retrieved, hand empty
+        assert len(battle.card_piles.hand) == 0
+        # Exhume itself in exhaust
+        assert len(battle.card_piles.exhaust) == 1
+        assert battle.card_piles.exhaust[0].card_id == "exhume"
+
+    def test_exhume_does_not_retrieve_itself(self, registry):
+        """Actions execute before card is exhausted, so Exhume can't
+        retrieve itself from the exhaust pile."""
+        player = _make_player()
+        exhume_inst = CardInstance(card_id="exhume")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(hand=[exhume_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("exhume")
+        interp.play_card(card_def, battle, exhume_inst)
+
+        # Empty exhaust at action time => nothing retrieved
+        # Exhume goes to exhaust in step 5
+        assert len(battle.card_piles.hand) == 0
+        assert len(battle.card_piles.exhaust) == 1
+        assert battle.card_piles.exhaust[0].card_id == "exhume"
+
+    def test_upgraded_costs_zero(self, registry):
+        """Exhume+: cost 0, same actions."""
+        player = _make_player(energy=3)
+        exhume_inst = CardInstance(card_id="exhume", upgraded=True)
+        exhausted_card = CardInstance(card_id="defend")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(
+                hand=[exhume_inst],
+                exhaust=[exhausted_card],
+            ),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("exhume")
+        interp.play_card(card_def, battle, exhume_inst)
+
+        # Cost 0 => energy unchanged
+        assert player.energy == 3
+        # Card retrieved
+        assert len(battle.card_piles.hand) == 1
+        assert battle.card_piles.hand[0].card_id == "defend"

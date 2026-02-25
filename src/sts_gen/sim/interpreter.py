@@ -64,6 +64,9 @@ class ActionInterpreter:
         # X-cost context: when an X-cost card is played, this is set to the
         # amount of energy spent, so child actions can read it as their value.
         self._x_cost_value: int = 0
+        # Damage accumulator: tracks total HP lost from the last DEAL_DAMAGE
+        # action(s) so subsequent actions can reference it (e.g. Reaper heal).
+        self._last_damage_dealt: int = 0
 
     # ------------------------------------------------------------------
     # Public API
@@ -196,6 +199,7 @@ class ActionInterpreter:
         # if it does we skip the energy step entirely.
 
         # 4. Execute actions
+        self._last_damage_dealt = 0
         self.execute_actions(actions, battle, source="player", chosen_target=chosen_target)
 
         # 5. Dispose of the card
@@ -218,8 +222,9 @@ class ActionInterpreter:
             else:
                 discard_card(battle, card_instance)
 
-        # Reset X-cost context
+        # Reset per-card context
         self._x_cost_value = 0
+        self._last_damage_dealt = 0
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -281,7 +286,7 @@ class ActionInterpreter:
                 target_entity = _resolve_entity(battle, target_idx)
                 if target_entity.is_dead:
                     continue
-                target_entity.take_damage(base_damage)
+                self._last_damage_dealt += target_entity.take_damage(base_damage)
             return
 
         if condition == "use_block_as_damage":
@@ -322,7 +327,7 @@ class ActionInterpreter:
         for target_idx in targets:
             if battle.is_over:
                 break
-            deal_damage(battle, source_idx, target_idx, base_damage, hits=hits)
+            self._last_damage_dealt += deal_damage(battle, source_idx, target_idx, base_damage, hits=hits)
 
     def _handle_gain_block(
         self,
@@ -511,6 +516,10 @@ class ActionInterpreter:
         amount = self._effective_value(node)
         target_spec = node.target or "self"
         condition = node.condition or ""
+
+        # heal_from_last_damage: heal equal to HP lost from last damage action (Reaper)
+        if condition == "heal_from_last_damage":
+            amount = self._last_damage_dealt
 
         # raise_max_hp: increase max HP and current HP (Feed)
         if condition == "raise_max_hp":
@@ -756,7 +765,19 @@ class ActionInterpreter:
         source: str,
         chosen_target: int | None,
     ) -> None:
-        """No-op escape hatch for future exotic effects."""
+        """Escape hatch for exotic one-off effects dispatched by condition."""
+        condition = (node.condition or "").strip()
+
+        if condition == "exhume":
+            # Pick a random card from the exhaust pile and move it to hand.
+            exhaust = battle.card_piles.exhaust
+            if not exhaust:
+                return
+            card = battle.rng.random_choice(exhaust)
+            exhaust.remove(card)
+            battle.card_piles.add_to_hand(card)
+            return
+
         logger.debug(
             "TRIGGER_CUSTOM hit (condition=%r, value=%r) -- no-op",
             node.condition,

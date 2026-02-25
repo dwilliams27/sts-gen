@@ -1259,18 +1259,18 @@
     "rarity": "RARE",
     "cost": 2,
     "target": "ALL_ENEMIES",
-    "description": "Deal 4 damage to ALL enemies. Heal HP equal to unblocked damage. Exhaust. [SIMPLIFIED: heals fixed amount]",
+    "description": "Deal 4 damage to ALL enemies. Heal HP equal to unblocked damage dealt. Exhaust.",
     "exhaust": true,
     "actions": [
       {"action_type": "deal_damage", "value": 4, "target": "all_enemies"},
-      {"action_type": "heal", "value": 4, "target": "self"}
+      {"action_type": "heal", "value": 0, "target": "self", "condition": "heal_from_last_damage"}
     ],
     "upgrade": {
       "actions": [
         {"action_type": "deal_damage", "value": 5, "target": "all_enemies"},
-        {"action_type": "heal", "value": 5, "target": "self"}
+        {"action_type": "heal", "value": 0, "target": "self", "condition": "heal_from_last_damage"}
       ],
-      "description": "Deal 5 damage to ALL enemies. Heal HP equal to unblocked damage. Exhaust. [SIMPLIFIED: heals fixed amount]"
+      "description": "Deal 5 damage to ALL enemies. Heal HP equal to unblocked damage dealt. Exhaust."
     }
   },
 
@@ -1301,14 +1301,14 @@
     "rarity": "RARE",
     "cost": 1,
     "target": "NONE",
-    "description": "Put a card from your Exhaust pile into your hand. Exhaust. [SIMPLIFIED: approximated as draw 1]",
+    "description": "Put a card from your Exhaust pile into your hand. Exhaust.",
     "exhaust": true,
     "actions": [
-      {"action_type": "draw_cards", "value": 1}
+      {"action_type": "trigger_custom", "condition": "exhume"}
     ],
     "upgrade": {
       "cost": 0,
-      "description": "Put a card from your Exhaust pile into your hand. Exhaust. [SIMPLIFIED: approximated as draw 1]"
+      "description": "Put a card from your Exhaust pile into your hand. Exhaust."
     }
   },
   {
