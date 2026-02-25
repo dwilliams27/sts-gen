@@ -181,7 +181,11 @@ class RunManager:
 
         # Build battle state from persistent game state
         deck_copy = [
-            CardInstance(card_id=ci.card_id, upgraded=ci.upgraded)
+            CardInstance(
+                card_id=ci.card_id,
+                upgraded=ci.upgraded,
+                upgrade_count=ci.upgrade_count,
+            )
             for ci in game_state.deck
         ]
         battle = BattleState(
@@ -297,12 +301,17 @@ class RunManager:
         if action == "smith":
             upgradable = [
                 ci for ci in game_state.deck
-                if not ci.upgraded and self._card_can_upgrade(ci.card_id)
+                if (not ci.upgraded and self._card_can_upgrade(ci.card_id))
+                or ci.card_id == "searing_blow"
             ]
             if upgradable:
                 chosen = self.agent.choose_card_to_upgrade(upgradable)
                 if chosen is not None:
-                    chosen.upgraded = True
+                    if chosen.card_id == "searing_blow":
+                        chosen.upgrade_count += 1
+                        chosen.upgraded = True
+                    else:
+                        chosen.upgraded = True
                     return
             # Fall through to rest if nothing to upgrade
             action = "rest"

@@ -35,6 +35,9 @@ class CardInstance(BaseModel):
     cost_override: int | None = None
     """If set, overrides the base energy cost from the IR definition."""
 
+    upgrade_count: int = 0
+    """Number of times upgraded (only relevant for Searing Blow's infinite upgrades)."""
+
 
 # ---------------------------------------------------------------------------
 # CardPiles
@@ -176,6 +179,9 @@ class BattleState(BaseModel):
         default_factory=lambda: [None, None, None]
     )
     """Potion belt (3 slots). ``None`` means empty."""
+
+    combat_vars: dict[str, int] = Field(default_factory=dict)
+    """Per-combat counters (Rampage play count, Blood for Blood HP loss count, etc.)."""
 
     # -- queries -------------------------------------------------------------
 

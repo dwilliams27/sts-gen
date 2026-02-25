@@ -768,6 +768,11 @@ class CombatSimulator:
                 hp_delta = player_hp_before - battle.player.current_hp
                 if hp_delta > 0:
                     td.fire(battle.player, StatusTrigger.ON_HP_LOSS, battle, "player")
+                    # Blood for Blood: track HP loss events
+                    battle.combat_vars["hp_loss_count"] = (
+                        battle.combat_vars.get("hp_loss_count", 0) + 1
+                    )
+                    self._update_blood_for_blood_costs(battle)
 
                 # Enemy reactive hooks (Enrage, Sharp Hide, Curl Up, etc.)
                 self._post_card_play_hooks(
@@ -805,7 +810,16 @@ class CombatSimulator:
                 # Fire ON_TURN_START on enemy (currently no enemy ON_TURN_START triggers)
                 td.fire(enemy, StatusTrigger.ON_TURN_START, battle, str(i))
 
+                player_hp_before_enemy = battle.player.current_hp
                 damage_dealt_to_player = self.enemy_ai.execute_intent(enemy, i, battle)
+
+                # Blood for Blood: track HP loss from enemy attacks
+                enemy_hp_delta = player_hp_before_enemy - battle.player.current_hp
+                if enemy_hp_delta > 0:
+                    battle.combat_vars["hp_loss_count"] = (
+                        battle.combat_vars.get("hp_loss_count", 0) + 1
+                    )
+                    self._update_blood_for_blood_costs(battle)
 
                 # Fire ON_ATTACKED on player when enemy deals attack damage
                 if damage_dealt_to_player > 0:
@@ -1173,6 +1187,15 @@ class CombatSimulator:
                 if potion_def is not None:
                     available.append((i, potion_def))
         return available
+
+    def _update_blood_for_blood_costs(self, battle: BattleState) -> None:
+        """Update cost_override for all Blood for Blood cards in play."""
+        hp_loss_count = battle.combat_vars.get("hp_loss_count", 0)
+        for pile in (battle.card_piles.draw, battle.card_piles.hand, battle.card_piles.discard):
+            for card in pile:
+                if card.card_id == "blood_for_blood":
+                    base_cost = 3 if card.upgraded else 4
+                    card.cost_override = max(0, base_cost - hp_loss_count)
 
     def _move_innate_to_top(self, battle: BattleState) -> None:
         """Move cards with innate=True to the top of the draw pile.

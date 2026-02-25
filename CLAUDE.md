@@ -86,7 +86,7 @@ data/vanilla/
   relics.json                  # 14 relic definitions (wiki-verified)
   potions.json                 # 11 potion definitions (wiki-verified)
 
-tests/                         # Mirrors src/ structure, 515 tests
+tests/                         # Mirrors src/ structure, 539 tests
 ```
 
 ## Phase 2 Plan
@@ -118,12 +118,12 @@ Full plan: `docs/PHASE2.md`
 - 10,000 full Act 1 runs complete error-free in ~30s
 - HeuristicAgent: ~8% Act 1 win rate, 9.5 avg floors, 5.1 avg battles won
 - RandomAgent: 0% win rate, 3.7 avg floors, 1.7 avg battles won
-- 515 tests, all passing
+- 539 tests, all passing
 
 ## What Doesn't Exist Yet
 
 - UpgradeDefinition now supports exhaust/innate overrides (Limit Break+, Brutality+)
-- Some cards are simplified (marked [SIMPLIFIED] in description): Armaments, Dual Wield, Rampage, Blood for Blood, Searing Blow, Fiend Fire, etc.
+- No cards are marked [SIMPLIFIED] — all 80 Ironclad cards are fully implemented
 - Enemy reactive hooks (Enrage, Sharp Hide, Curl Up, Angry, split, escape, mode shift, sleep/wake) are implemented directly in runner.py — not yet generalized through the trigger system
 - Events/shops are loosely emulated (random outcomes, no real event system or shop UI)
 - LLM agents, balance analysis, mod builder

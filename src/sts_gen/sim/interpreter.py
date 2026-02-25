@@ -67,6 +67,8 @@ class ActionInterpreter:
         # Damage accumulator: tracks total HP lost from the last DEAL_DAMAGE
         # action(s) so subsequent actions can reference it (e.g. Reaper heal).
         self._last_damage_dealt: int = 0
+        # Current card instance being played (for Rampage/Searing Blow/Armaments/Dual Wield).
+        self._current_card_instance: CardInstance | None = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -200,6 +202,7 @@ class ActionInterpreter:
 
         # 4. Execute actions
         self._last_damage_dealt = 0
+        self._current_card_instance = card_instance
         self.execute_actions(actions, battle, source="player", chosen_target=chosen_target)
 
         # 5. Dispose of the card
@@ -225,6 +228,7 @@ class ActionInterpreter:
         # Reset per-card context
         self._x_cost_value = 0
         self._last_damage_dealt = 0
+        self._current_card_instance = None
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -289,7 +293,22 @@ class ActionInterpreter:
                 self._last_damage_dealt += target_entity.take_damage(base_damage)
             return
 
-        if condition == "use_block_as_damage":
+        if condition.startswith("plus_rampage_scaling:"):
+            # Rampage: add accumulated bonus from combat_vars
+            try:
+                scaling = int(condition.split(":", 1)[1])
+            except (ValueError, IndexError):
+                scaling = 5
+            if self._current_card_instance is not None:
+                key = f"rampage_{self._current_card_instance.id}"
+                bonus = battle.combat_vars.get(key, 0)
+                base_damage += bonus
+        elif condition == "searing_blow_scaling":
+            # Searing Blow: damage = 12 + 4n + n(n-1)/2 where n = upgrade_count
+            if self._current_card_instance is not None:
+                n = self._current_card_instance.upgrade_count
+                base_damage = 12 + 4 * n + n * (n - 1) // 2
+        elif condition == "use_block_as_damage":
             # Body Slam: use current block as base damage
             source_entity = self._resolve_source_entity(battle, source)
             base_damage = source_entity.block
@@ -778,6 +797,79 @@ class ActionInterpreter:
             card = battle.rng.random_choice(exhaust)
             exhaust.remove(card)
             battle.card_piles.add_to_hand(card)
+            return
+
+        if condition.startswith("increment_rampage:"):
+            # Rampage: increment per-instance play counter
+            try:
+                scaling = int(condition.split(":", 1)[1])
+            except (ValueError, IndexError):
+                scaling = 5
+            if self._current_card_instance is not None:
+                key = f"rampage_{self._current_card_instance.id}"
+                battle.combat_vars[key] = battle.combat_vars.get(key, 0) + scaling
+            return
+
+        if condition == "armaments":
+            # Armaments (base): upgrade 1 random non-upgraded card in hand
+            current_id = self._current_card_instance.id if self._current_card_instance else None
+            candidates = [
+                c for c in battle.card_piles.hand
+                if not c.upgraded and c.id != current_id
+            ]
+            if candidates:
+                card = battle.rng.random_choice(candidates)
+                card.upgraded = True
+            return
+
+        if condition == "armaments_all":
+            # Armaments+ (upgraded): upgrade ALL non-upgraded cards in hand
+            current_id = self._current_card_instance.id if self._current_card_instance else None
+            for card in battle.card_piles.hand:
+                if not card.upgraded and card.id != current_id:
+                    card.upgraded = True
+            return
+
+        if condition.startswith("dual_wield:"):
+            # Dual Wield: copy best Attack/Power in hand
+            try:
+                copies = int(condition.split(":", 1)[1])
+            except (ValueError, IndexError):
+                copies = 1
+            from sts_gen.ir.cards import CardType
+            current_id = self._current_card_instance.id if self._current_card_instance else None
+            candidates = []
+            for c in battle.card_piles.hand:
+                if c.id == current_id:
+                    continue
+                cd = self._card_registry.get(c.card_id)
+                if cd is not None and cd.type in (CardType.ATTACK, CardType.POWER):
+                    candidates.append((c, cd))
+            if candidates:
+                # Pick highest-cost card as copy target
+                best = max(candidates, key=lambda x: x[1].cost)
+                for _ in range(copies):
+                    new_card = CardInstance(
+                        card_id=best[0].card_id,
+                        upgraded=best[0].upgraded,
+                        cost_override=best[0].cost_override,
+                        upgrade_count=best[0].upgrade_count,
+                    )
+                    battle.card_piles.add_to_hand(new_card)
+            return
+
+        if condition == "infernal_blade":
+            # Infernal Blade: add a random non-basic Attack to hand with cost 0
+            from sts_gen.ir.cards import CardType, CardRarity
+            attack_candidates = [
+                cid for cid, cd in self._card_registry.items()
+                if cd.type == CardType.ATTACK
+                and cd.rarity not in (CardRarity.BASIC, CardRarity.SPECIAL)
+            ]
+            if attack_candidates:
+                chosen_id = battle.rng.random_choice(attack_candidates)
+                new_card = CardInstance(card_id=chosen_id, cost_override=0)
+                battle.card_piles.add_to_hand(new_card)
             return
 
         logger.debug(

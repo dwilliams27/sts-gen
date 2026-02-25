@@ -343,15 +343,17 @@
     "rarity": "COMMON",
     "cost": 1,
     "target": "SELF",
-    "description": "Gain 5 Block. Upgrade a card in your hand for the rest of combat. [SIMPLIFIED: upgrade not modeled]",
+    "description": "Gain 5 Block. Upgrade a card in your hand for the rest of combat.",
     "actions": [
-      {"action_type": "gain_block", "value": 5, "target": "self"}
+      {"action_type": "gain_block", "value": 5, "target": "self"},
+      {"action_type": "trigger_custom", "condition": "armaments"}
     ],
     "upgrade": {
       "actions": [
-        {"action_type": "gain_block", "value": 5, "target": "self"}
+        {"action_type": "gain_block", "value": 5, "target": "self"},
+        {"action_type": "trigger_custom", "condition": "armaments_all"}
       ],
-      "description": "Gain 5 Block. Upgrade ALL cards in your hand for the rest of combat. [SIMPLIFIED: upgrade not modeled]"
+      "description": "Gain 5 Block. Upgrade ALL cards in your hand for the rest of combat."
     }
   },
   {
@@ -461,7 +463,7 @@
     "rarity": "UNCOMMON",
     "cost": 4,
     "target": "ENEMY",
-    "description": "Costs 1 less Energy for each time you lose HP this combat. Deal 18 damage. [SIMPLIFIED: cost reduction not modeled]",
+    "description": "Costs 1 less Energy for each time you lose HP this combat. Deal 18 damage.",
     "actions": [
       {"action_type": "deal_damage", "value": 18, "target": "enemy"}
     ],
@@ -470,7 +472,7 @@
       "actions": [
         {"action_type": "deal_damage", "value": 22, "target": "enemy"}
       ],
-      "description": "Costs 1 less Energy for each time you lose HP this combat. Deal 22 damage. [SIMPLIFIED: cost reduction not modeled]"
+      "description": "Costs 1 less Energy for each time you lose HP this combat. Deal 22 damage."
     }
   },
   {
@@ -568,15 +570,17 @@
     "rarity": "UNCOMMON",
     "cost": 1,
     "target": "ENEMY",
-    "description": "Deal 8 damage. Damage increases by 5 each time this card is played this combat. [SIMPLIFIED: scaling not modeled]",
+    "description": "Deal 8 damage. Damage increases by 5 each time this card is played this combat.",
     "actions": [
-      {"action_type": "deal_damage", "value": 8, "target": "enemy"}
+      {"action_type": "deal_damage", "value": 8, "target": "enemy", "condition": "plus_rampage_scaling:5"},
+      {"action_type": "trigger_custom", "condition": "increment_rampage:5"}
     ],
     "upgrade": {
       "actions": [
-        {"action_type": "deal_damage", "value": 8, "target": "enemy"}
+        {"action_type": "deal_damage", "value": 8, "target": "enemy", "condition": "plus_rampage_scaling:8"},
+        {"action_type": "trigger_custom", "condition": "increment_rampage:8"}
       ],
-      "description": "Deal 8 damage. Damage increases by 8 each time this card is played this combat. [SIMPLIFIED: scaling not modeled]"
+      "description": "Deal 8 damage. Damage increases by 8 each time this card is played this combat."
     }
   },
   {
@@ -606,15 +610,12 @@
     "rarity": "UNCOMMON",
     "cost": 2,
     "target": "ENEMY",
-    "description": "Deal 12 damage. Can be upgraded any number of times. [SIMPLIFIED: single upgrade tier]",
+    "description": "Deal 12 damage. Can be upgraded any number of times.",
     "actions": [
-      {"action_type": "deal_damage", "value": 12, "target": "enemy"}
+      {"action_type": "deal_damage", "value": 12, "target": "enemy", "condition": "searing_blow_scaling"}
     ],
     "upgrade": {
-      "actions": [
-        {"action_type": "deal_damage", "value": 16, "target": "enemy"}
-      ],
-      "description": "Deal 16 damage. Can be upgraded any number of times. [SIMPLIFIED: single upgrade tier]"
+      "description": "Deal damage based on upgrade count. Can be upgraded any number of times."
     }
   },
   {
@@ -770,15 +771,15 @@
     "rarity": "UNCOMMON",
     "cost": 1,
     "target": "NONE",
-    "description": "Create a copy of an Attack or Power card in your hand. [SIMPLIFIED: approximated as draw 1]",
+    "description": "Create a copy of an Attack or Power card in your hand.",
     "actions": [
-      {"action_type": "draw_cards", "value": 1}
+      {"action_type": "trigger_custom", "condition": "dual_wield:1"}
     ],
     "upgrade": {
       "actions": [
-        {"action_type": "draw_cards", "value": 2}
+        {"action_type": "trigger_custom", "condition": "dual_wield:2"}
       ],
-      "description": "Create 2 copies of an Attack or Power card in your hand. [SIMPLIFIED: approximated as draw 2]"
+      "description": "Create 2 copies of an Attack or Power card in your hand."
     }
   },
   {
@@ -843,14 +844,14 @@
     "rarity": "UNCOMMON",
     "cost": 1,
     "target": "NONE",
-    "description": "Add a random Attack into your hand. It costs 0 this turn. Exhaust. [SIMPLIFIED: approximated as draw 1]",
+    "description": "Add a random Attack into your hand. It costs 0 this turn. Exhaust.",
     "exhaust": true,
     "actions": [
-      {"action_type": "draw_cards", "value": 1}
+      {"action_type": "trigger_custom", "condition": "infernal_blade"}
     ],
     "upgrade": {
       "cost": 0,
-      "description": "Add a random Attack into your hand. It costs 0 this turn. Exhaust. [SIMPLIFIED: approximated as draw 1]"
+      "description": "Add a random Attack into your hand. It costs 0 this turn. Exhaust."
     }
   },
   {

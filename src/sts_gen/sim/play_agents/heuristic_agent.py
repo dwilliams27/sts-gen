@@ -71,7 +71,11 @@ _CARD_TIER_SCORES: dict[str, int] = {
     "rage": 36,
     "combust": 35,
     "power_through": 34,
-    "blood_for_blood": 33,
+    "armaments": 72,
+    "blood_for_blood": 58,
+    "rampage": 55,
+    "dual_wield": 50,
+    "infernal_blade": 45,
     "second_wind": 32,
     "disarm": 30,
     "entrench": 28,
@@ -80,7 +84,7 @@ _CARD_TIER_SCORES: dict[str, int] = {
     "dropkick": 25,
     "limit_break": 24,
     "whirlwind": 23,
-    "searing_blow": 22,
+    "searing_blow": 35,
     "spot_weakness": 21,
     "heavy_blade": 20,
     # Low tier — generally skip
@@ -102,6 +106,8 @@ _UPGRADE_SCORES: dict[str, int] = {
     "pommel_strike": 75,
     "shrug_it_off": 70,
     "uppercut": 65,
+    "searing_blow": 70,
+    "armaments": 60,
     "flame_barrier": 60,
     "metallicize": 55,
     "impervious": 50,
@@ -392,10 +398,11 @@ class HeuristicAgent(PlayAgent):
         card_inst: CardInstance,
         player: Player,
         target: Enemy,
+        battle: BattleState | None = None,
     ) -> int:
         """Estimate total damage a card deals to a single target."""
         actions = self._get_actions(card_def, card_inst)
-        return self._walk_damage(actions, player, target, 1)
+        return self._walk_damage(actions, player, target, 1, card_inst, battle)
 
     def _walk_damage(
         self,
@@ -403,12 +410,26 @@ class HeuristicAgent(PlayAgent):
         player: Player,
         target: Enemy,
         multiplier: int,
+        card_inst: CardInstance | None = None,
+        battle: BattleState | None = None,
     ) -> int:
         """Recursively walk action tree summing DEAL_DAMAGE nodes."""
         total = 0
         for action in actions:
             if action.action_type == ActionType.DEAL_DAMAGE:
                 base = action.value or 0
+                condition = action.condition or ""
+
+                # Rampage: add accumulated bonus
+                if condition.startswith("plus_rampage_scaling:") and card_inst and battle:
+                    key = f"rampage_{card_inst.id}"
+                    base += battle.combat_vars.get(key, 0)
+
+                # Searing Blow: compute damage from upgrade_count
+                if condition == "searing_blow_scaling" and card_inst:
+                    n = card_inst.upgrade_count
+                    base = 12 + 4 * n + n * (n - 1) // 2
+
                 # Apply strength
                 strength = get_status_stacks(player, "strength")
                 damage = float(base + strength)
@@ -424,12 +445,14 @@ class HeuristicAgent(PlayAgent):
                 if action.children:
                     total += self._walk_damage(
                         action.children, player, target, multiplier * times,
+                        card_inst, battle,
                     )
             elif action.action_type == ActionType.CONDITIONAL:
                 # Optimistically include conditional damage
                 if action.children:
                     total += self._walk_damage(
                         action.children, player, target, multiplier,
+                        card_inst, battle,
                     )
         return total
 
@@ -562,7 +585,7 @@ class HeuristicAgent(PlayAgent):
         for ci, cd in playable:
             if cd.type != CardType.ATTACK:
                 continue
-            est = self._estimate_damage(cd, ci, battle.player, target)
+            est = self._estimate_damage(cd, ci, battle.player, target, battle)
             if est >= effective_hp:
                 tgt = self._resolve_target(cd, battle, target_idx)
                 return ci, cd, tgt
@@ -650,7 +673,7 @@ class HeuristicAgent(PlayAgent):
             # Defer Body Slam until after block cards
             if cd.id == "body_slam":
                 continue
-            est = self._estimate_damage(cd, ci, battle.player, target)
+            est = self._estimate_damage(cd, ci, battle.player, target, battle)
             cost = self._effective_cost(cd, ci, battle)
             # AoE bonus when multiple enemies alive
             if cd.target == CardTarget.ALL_ENEMIES and n_living >= 2:
