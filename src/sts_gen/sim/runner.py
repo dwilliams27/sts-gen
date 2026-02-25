@@ -1404,3 +1404,33 @@ class BatchRunner:
             results = pool.map(_worker_run_single, work_items)
 
         return results
+
+    def run_full_act_batch(
+        self,
+        n_runs: int,
+        base_seed: int = 42,
+    ) -> list[RunTelemetry]:
+        """Run n full Act 1 runs, returning per-run telemetry.
+
+        Each run uses a different seed derived from *base_seed*.
+        Sequential only for now.
+        """
+        from sts_gen.sim.dungeon.run_manager import RunManager
+
+        results: list[RunTelemetry] = []
+        for i in range(n_runs):
+            seed = base_seed + i
+            master_rng = GameRNG(seed)
+            agent_rng = master_rng.fork("agent")
+            if self.agent_class is RandomAgent:
+                agent = RandomAgent(rng=agent_rng)
+            else:
+                try:
+                    agent = self.agent_class(rng=agent_rng)  # type: ignore[call-arg]
+                except TypeError:
+                    agent = self.agent_class()  # type: ignore[call-arg]
+
+            rm = RunManager(self.registry, agent, master_rng)
+            telemetry = rm.run_act_1()
+            results.append(telemetry)
+        return results

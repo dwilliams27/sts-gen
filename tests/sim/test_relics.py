@@ -398,6 +398,10 @@ class _NoPlayAgent(PlayAgent):
         return None
     def choose_potion_to_use(self, battle, available_potions):
         return None
+    def choose_rest_action(self, player, deck):
+        return "rest"
+    def choose_card_to_upgrade(self, upgradable):
+        return None
 
 
 class TestRelicIntegration:
@@ -467,6 +471,10 @@ class TestRelicIntegration:
             def choose_card_reward(self, cards, deck):
                 return None
             def choose_potion_to_use(self, battle, available_potions):
+                return None
+            def choose_rest_action(self, player, deck):
+                return "rest"
+            def choose_card_to_upgrade(self, upgradable):
                 return None
 
         sim = CombatSimulator(registry, interpreter, _OneHitAgent())

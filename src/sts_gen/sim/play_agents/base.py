@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sts_gen.ir.cards import CardDefinition
     from sts_gen.ir.potions import PotionDefinition
+    from sts_gen.sim.core.entities import Player
     from sts_gen.sim.core.game_state import BattleState, CardInstance
 
 
@@ -94,4 +95,43 @@ class PlayAgent(ABC):
             potions, or ``None`` for self-target / AoE potions.
 
             Return ``None`` to skip using a potion this action.
+        """
+
+    @abstractmethod
+    def choose_rest_action(
+        self,
+        player: Player,
+        deck: list[CardInstance],
+    ) -> str:
+        """Choose what to do at a rest site.
+
+        Parameters
+        ----------
+        player:
+            The player entity (for HP checks).
+        deck:
+            The player's current deck.
+
+        Returns
+        -------
+        str
+            ``"rest"`` to heal 30% max HP, or ``"smith"`` to upgrade a card.
+        """
+
+    @abstractmethod
+    def choose_card_to_upgrade(
+        self,
+        upgradable: list[CardInstance],
+    ) -> CardInstance | None:
+        """Choose a card to upgrade at a rest site Smith.
+
+        Parameters
+        ----------
+        upgradable:
+            List of card instances that can be upgraded.
+
+        Returns
+        -------
+        CardInstance | None
+            The card to upgrade, or ``None`` to skip.
         """

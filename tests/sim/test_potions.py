@@ -214,6 +214,12 @@ class _AlwaysUsePotionAgent(PlayAgent):
                     break
         return slot, potion_def, target
 
+    def choose_rest_action(self, player, deck):
+        return "rest"
+
+    def choose_card_to_upgrade(self, upgradable):
+        return None
+
 
 class TestPotionIntegration:
     def test_potion_used_in_combat(self, registry):

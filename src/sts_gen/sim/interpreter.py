@@ -572,7 +572,9 @@ class ActionInterpreter:
     ) -> None:
         card_id = node.card_id
         if card_id is None:
-            logger.warning("ADD_CARD_TO_PILE node missing card_id")
+            # Simplified cards (Headbutt, Warcry) use add_card_to_pile without
+            # card_id to represent "move a card between piles" — not yet implemented.
+            logger.debug("ADD_CARD_TO_PILE node missing card_id (simplified card)")
             return
 
         new_card = CardInstance(card_id=card_id)

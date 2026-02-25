@@ -9,7 +9,7 @@ Full architecture and phased plan: `docs/FOUNDATION.md`
 ## Quick Reference
 
 ```bash
-uv run pytest tests/ -v          # Run all tests (323 tests, ~5s)
+uv run pytest tests/ -v          # Run all tests (457 tests, ~6s)
 uv run pytest tests/ -x          # Stop on first failure
 ```
 
@@ -68,8 +68,12 @@ src/sts_gen/
       registry.py              # ContentRegistry — loads and serves cards, enemies, status defs, relics, potions
 
     relic_dispatcher.py          # RelicDispatcher — fires relic triggers during combat
+    dungeon/
+      map_gen.py               #   MapNode, MapGenerator (linear 16-floor Act 1 map)
+      rewards.py               #   Card/gold/relic/potion reward generation
+      run_manager.py           #   RunManager — drives full Act 1 runs
     play_agents/
-      base.py                  # PlayAgent ABC
+      base.py                  # PlayAgent ABC (5 abstract methods)
       random_agent.py          # RandomAgent (random valid actions, 10% end-turn chance)
 
 data/vanilla/
@@ -80,7 +84,7 @@ data/vanilla/
   relics.json                  # 14 relic definitions (wiki-verified)
   potions.json                 # 11 potion definitions (wiki-verified)
 
-tests/                         # Mirrors src/ structure, 416 tests
+tests/                         # Mirrors src/ structure, 457 tests
 ```
 
 ## Phase 2 Plan
@@ -103,14 +107,14 @@ Full plan: `docs/PHASE2.md`
 - [x] 2C: Full Act 1 enemy pool (25 enemies + encounters, wiki-verified)
 - [x] 2D: Status trigger system
 - [x] 2E: Relics + potions
-- [ ] 2F: Map generator + run manager
+- [x] 2F: Map generator + run manager
 - [ ] 2G: HeuristicAgent
 - [ ] 2H: Integration + exit gate
 
 ## What Doesn't Exist Yet
 
 - HeuristicAgent (only RandomAgent exists)
-- Map generation, run manager, rewards, shops in sim
+- ~~Map generation, run manager, rewards, shops~~ (DONE: MapGenerator + RunManager + rewards + loosely-emulated events/shops)
 - ~~Status trigger system~~ (DONE: TriggerDispatcher + 17 wiki-verified status definitions fire generically)
 - ~~Relics + potions~~ (DONE: RelicDispatcher + 14 relics + 11 potions, all wiki-verified)
 - UpgradeDefinition now supports exhaust/innate overrides (Limit Break+, Brutality+)

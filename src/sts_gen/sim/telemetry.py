@@ -79,3 +79,9 @@ class RunTelemetry:
     final_result: str = "loss"  # "win" or "loss"
     floors_reached: int = 0
     cards_in_deck: list[str] = field(default_factory=list)
+    cards_added: list[str] = field(default_factory=list)
+    relics_collected: list[str] = field(default_factory=list)
+    potions_used: int = 0
+    gold_earned: int = 0
+    rest_sites_visited: int = 0
+    hp_at_each_floor: list[int] = field(default_factory=list)

@@ -23,6 +23,7 @@ from sts_gen.sim.play_agents.base import PlayAgent
 if TYPE_CHECKING:
     from sts_gen.ir.cards import CardDefinition
     from sts_gen.ir.potions import PotionDefinition
+    from sts_gen.sim.core.entities import Player
     from sts_gen.sim.core.game_state import BattleState, CardInstance
 
 from sts_gen.ir.cards import CardTarget
@@ -121,3 +122,25 @@ class RandomAgent(PlayAgent):
                 return None
 
         return slot, potion_def, chosen_target
+
+    def choose_rest_action(
+        self,
+        player: Player,
+        deck: list[CardInstance],
+    ) -> str:
+        """Rest if HP < 60%, else 50/50 rest/smith."""
+        hp_ratio = player.current_hp / player.max_hp
+        if hp_ratio < 0.60:
+            return "rest"
+        if self._rng.random_float() < 0.5:
+            return "rest"
+        return "smith"
+
+    def choose_card_to_upgrade(
+        self,
+        upgradable: list[CardInstance],
+    ) -> CardInstance | None:
+        """Pick a random upgradable card."""
+        if not upgradable:
+            return None
+        return self._rng.random_choice(upgradable)
