@@ -1342,6 +1342,16 @@ class BatchRunner:
         self.registry = registry
         self.agent_class = agent_class
 
+    def _make_agent(self, agent_rng: GameRNG) -> PlayAgent:
+        """Construct an agent, passing registry if the class accepts it."""
+        try:
+            return self.agent_class(registry=self.registry, rng=agent_rng)  # type: ignore[call-arg]
+        except TypeError:
+            try:
+                return self.agent_class(rng=agent_rng)  # type: ignore[call-arg]
+            except TypeError:
+                return self.agent_class()  # type: ignore[call-arg]
+
     def run_batch(
         self,
         n_runs: int,
@@ -1364,13 +1374,7 @@ class BatchRunner:
         results: list[RunTelemetry] = []
         for seed in seeds:
             agent_rng = GameRNG(seed).fork("agent")
-            if self.agent_class is RandomAgent:
-                agent = RandomAgent(rng=agent_rng)
-            else:
-                try:
-                    agent = self.agent_class(rng=agent_rng)  # type: ignore[call-arg]
-                except TypeError:
-                    agent = self.agent_class()  # type: ignore[call-arg]
+            agent = self._make_agent(agent_rng)
 
             result = _run_single_encounter(
                 self.registry, agent, seed, encounter_config,
@@ -1422,13 +1426,7 @@ class BatchRunner:
             seed = base_seed + i
             master_rng = GameRNG(seed)
             agent_rng = master_rng.fork("agent")
-            if self.agent_class is RandomAgent:
-                agent = RandomAgent(rng=agent_rng)
-            else:
-                try:
-                    agent = self.agent_class(rng=agent_rng)  # type: ignore[call-arg]
-                except TypeError:
-                    agent = self.agent_class()  # type: ignore[call-arg]
+            agent = self._make_agent(agent_rng)
 
             rm = RunManager(self.registry, agent, master_rng)
             telemetry = rm.run_act_1()

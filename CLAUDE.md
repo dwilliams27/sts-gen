@@ -9,7 +9,7 @@ Full architecture and phased plan: `docs/FOUNDATION.md`
 ## Quick Reference
 
 ```bash
-uv run pytest tests/ -v          # Run all tests (457 tests, ~6s)
+uv run pytest tests/ -v          # Run all tests (501 tests, ~6s)
 uv run pytest tests/ -x          # Stop on first failure
 ```
 
@@ -75,6 +75,7 @@ src/sts_gen/
     play_agents/
       base.py                  # PlayAgent ABC (5 abstract methods)
       random_agent.py          # RandomAgent (random valid actions, 10% end-turn chance)
+      heuristic_agent.py       # HeuristicAgent (priority-based heuristic play)
 
 data/vanilla/
   ironclad_cards.json          # 80 Ironclad cards in IR format (all wiki-verified)
@@ -84,7 +85,7 @@ data/vanilla/
   relics.json                  # 14 relic definitions (wiki-verified)
   potions.json                 # 11 potion definitions (wiki-verified)
 
-tests/                         # Mirrors src/ structure, 457 tests
+tests/                         # Mirrors src/ structure, 501 tests
 ```
 
 ## Phase 2 Plan
@@ -108,12 +109,12 @@ Full plan: `docs/PHASE2.md`
 - [x] 2D: Status trigger system
 - [x] 2E: Relics + potions
 - [x] 2F: Map generator + run manager
-- [ ] 2G: HeuristicAgent
+- [x] 2G: HeuristicAgent
 - [ ] 2H: Integration + exit gate
 
 ## What Doesn't Exist Yet
 
-- HeuristicAgent (only RandomAgent exists)
+- ~~HeuristicAgent~~ (DONE: priority-based heuristic agent with card play waterfall, tier-list rewards, situational potions, HP-threshold rest/smith)
 - ~~Map generation, run manager, rewards, shops~~ (DONE: MapGenerator + RunManager + rewards + loosely-emulated events/shops)
 - ~~Status trigger system~~ (DONE: TriggerDispatcher + 17 wiki-verified status definitions fire generically)
 - ~~Relics + potions~~ (DONE: RelicDispatcher + 14 relics + 11 potions, all wiki-verified)
