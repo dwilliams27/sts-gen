@@ -346,6 +346,16 @@ class ActionInterpreter:
                     battle.enemies[idx].block += max(0, amount)
             return
 
+        # per_non_attack_in_hand: multiply block by number of non-Attack cards in hand (Second Wind)
+        if condition == "per_non_attack_in_hand":
+            from sts_gen.ir.cards import CardType
+            count = sum(
+                1 for c in battle.card_piles.hand
+                if (cd := self._card_registry.get(c.card_id)) is not None
+                and cd.type != CardType.ATTACK
+            )
+            amount *= count
+
         if target_spec in ("self", "default"):
             source_entity = self._resolve_source_entity(battle, source)
             gain_block(source_entity, amount)
@@ -411,6 +421,10 @@ class ActionInterpreter:
         source: str,
         chosen_target: int | None,
     ) -> None:
+        # "No Draw" status blocks all interpreter-dispatched draws (Battle Trance)
+        source_entity = self._resolve_source_entity(battle, source)
+        if has_status(source_entity, "No Draw"):
+            return
         n = self._effective_value(node)
         if n > 0:
             draw_cards(battle, n)
@@ -496,6 +510,21 @@ class ActionInterpreter:
     ) -> None:
         amount = self._effective_value(node)
         target_spec = node.target or "self"
+        condition = node.condition or ""
+
+        # raise_max_hp: increase max HP and current HP (Feed)
+        if condition == "raise_max_hp":
+            if target_spec in ("self", "default"):
+                source_entity = self._resolve_source_entity(battle, source)
+                source_entity.max_hp += amount
+                source_entity.current_hp += amount
+            else:
+                targets = resolve_targets(battle, source, target_spec, chosen_target=chosen_target)
+                for idx in targets:
+                    enemy = battle.enemies[idx]
+                    enemy.max_hp += amount
+                    enemy.current_hp += amount
+            return
 
         if target_spec in ("self", "default"):
             source_entity = self._resolve_source_entity(battle, source)
@@ -937,6 +966,12 @@ class ActionInterpreter:
             if chosen_target is not None and 0 <= chosen_target < len(battle.enemies):
                 enemy = battle.enemies[chosen_target]
                 return enemy.intent_damage is not None and enemy.intent_damage > 0
+            return False
+
+        # target_is_dead — Feed: chosen target was killed by previous action
+        if condition == "target_is_dead":
+            if chosen_target is not None and 0 <= chosen_target < len(battle.enemies):
+                return battle.enemies[chosen_target].is_dead
             return False
 
         logger.warning("Unknown condition %r, evaluating to False", condition)

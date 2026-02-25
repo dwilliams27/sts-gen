@@ -39,7 +39,7 @@ _PASSIVE_MODIFIERS = frozenset({
 
 # Statuses that are removed entirely (all stacks) at end of turn.
 _TEMPORARY_STATUSES = frozenset({
-    "Rage", "Flame Barrier",
+    "Rage", "Flame Barrier", "No Draw",
 })
 
 

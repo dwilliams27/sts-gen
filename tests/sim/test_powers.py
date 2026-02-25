@@ -762,3 +762,277 @@ class TestFlameBarrierCard:
         # Upgraded: 16 block, 6 stacks
         assert player.block == 16
         assert get_status_stacks(player, "Flame Barrier") == 6
+
+
+# ===================================================================
+# Second Wind — un-simplified
+# ===================================================================
+
+class TestSecondWind:
+    """Wiki: Exhaust all non-Attack cards in your hand. Gain 5 (7+) Block
+    for each card Exhausted."""
+
+    def test_exhausts_non_attacks_gains_block(self, registry):
+        """3 non-attack cards in hand => 3 * 5 = 15 block, all exhausted."""
+        player = _make_player()
+        # Hand: Second Wind (Skill) + 2 Defends (Skill) + 1 Strike (Attack)
+        sw_inst = CardInstance(card_id="second_wind")
+        defend1 = CardInstance(card_id="defend")
+        defend2 = CardInstance(card_id="defend")
+        strike = CardInstance(card_id="strike")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(hand=[sw_inst, defend1, defend2, strike]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("second_wind")
+        interp.play_card(card_def, battle, sw_inst)
+
+        # Non-attacks in hand when played: second_wind + defend1 + defend2 = 3
+        # Block: 3 * 5 = 15 (+ dex 0)
+        assert player.block == 15
+        # All non-attacks exhausted (including second_wind itself via play_card)
+        assert len(battle.card_piles.hand) == 1
+        assert battle.card_piles.hand[0].card_id == "strike"
+        # second_wind disposed by play_card (exhaust=false, so it goes to discard
+        # UNLESS it was already exhausted by its own action)
+        # The exhaust_cards action exhausts it from hand, then play_card sees
+        # it's no longer in hand and skips disposal.
+        exhausted_ids = [c.card_id for c in battle.card_piles.exhaust]
+        assert "defend" in exhausted_ids
+        assert "second_wind" in exhausted_ids
+
+    def test_upgraded_gains_more_block(self, registry):
+        """Upgraded: 7 block per card."""
+        player = _make_player()
+        sw_inst = CardInstance(card_id="second_wind", upgraded=True)
+        defend = CardInstance(card_id="defend")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(hand=[sw_inst, defend]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("second_wind")
+        interp.play_card(card_def, battle, sw_inst)
+
+        # Non-attacks: second_wind + defend = 2. Block: 2 * 7 = 14
+        assert player.block == 14
+
+    def test_attacks_stay_in_hand(self, registry):
+        """Attacks are not exhausted."""
+        player = _make_player()
+        sw_inst = CardInstance(card_id="second_wind")
+        strike1 = CardInstance(card_id="strike")
+        strike2 = CardInstance(card_id="strike")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(hand=[sw_inst, strike1, strike2]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("second_wind")
+        interp.play_card(card_def, battle, sw_inst)
+
+        # Only second_wind is non-attack => 1 * 5 = 5 block
+        assert player.block == 5
+        # Both strikes remain
+        assert len(battle.card_piles.hand) == 2
+        assert all(c.card_id == "strike" for c in battle.card_piles.hand)
+
+    def test_no_non_attacks_no_block(self, registry):
+        """If only attacks in hand (besides Second Wind itself), still exhausts
+        Second Wind and gains block for it."""
+        player = _make_player()
+        sw_inst = CardInstance(card_id="second_wind")
+        strike = CardInstance(card_id="strike")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(hand=[sw_inst, strike]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("second_wind")
+        interp.play_card(card_def, battle, sw_inst)
+
+        # second_wind itself is non-attack => 1 * 5 = 5 block
+        assert player.block == 5
+
+
+# ===================================================================
+# Feed — un-simplified
+# ===================================================================
+
+class TestFeed:
+    """Wiki: Deal 10 (12+) damage. If Fatal, raise your Max HP by 3 (4+). Exhaust."""
+
+    def test_fatal_raises_max_hp(self, registry):
+        """Kill target => max HP and current HP increase."""
+        player = _make_player(max_hp=80, current_hp=80)
+        feed_inst = CardInstance(card_id="feed")
+        enemy = _make_enemy(current_hp=5, max_hp=20)
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[feed_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("feed")
+        interp.play_card(card_def, battle, feed_inst, chosen_target=0)
+
+        assert enemy.is_dead
+        assert player.max_hp == 83
+        assert player.current_hp == 83
+
+    def test_non_fatal_no_max_hp_raise(self, registry):
+        """Target survives => no max HP change."""
+        player = _make_player(max_hp=80, current_hp=80)
+        feed_inst = CardInstance(card_id="feed")
+        enemy = _make_enemy(current_hp=100, max_hp=100)
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[feed_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("feed")
+        interp.play_card(card_def, battle, feed_inst, chosen_target=0)
+
+        assert not enemy.is_dead
+        assert player.max_hp == 80
+        assert player.current_hp == 80
+
+    def test_upgraded_raises_more(self, registry):
+        """Feed+: 12 damage, +4 max HP on kill."""
+        player = _make_player(max_hp=80, current_hp=70)
+        feed_inst = CardInstance(card_id="feed", upgraded=True)
+        enemy = _make_enemy(current_hp=5, max_hp=20)
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[feed_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("feed")
+        interp.play_card(card_def, battle, feed_inst, chosen_target=0)
+
+        assert enemy.is_dead
+        assert player.max_hp == 84
+        assert player.current_hp == 74  # Was 70, +4
+
+    def test_card_is_exhausted(self, registry):
+        """Feed should exhaust after play."""
+        player = _make_player()
+        feed_inst = CardInstance(card_id="feed")
+        enemy = _make_enemy(current_hp=100)
+        battle = BattleState(
+            player=player,
+            enemies=[enemy],
+            card_piles=CardPiles(hand=[feed_inst]),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("feed")
+        interp.play_card(card_def, battle, feed_inst, chosen_target=0)
+
+        assert len(battle.card_piles.exhaust) == 1
+        assert battle.card_piles.exhaust[0].card_id == "feed"
+
+
+# ===================================================================
+# Battle Trance — un-simplified
+# ===================================================================
+
+class TestBattleTrance:
+    """Wiki: Draw 3 (4+) cards. You cannot draw additional cards this turn."""
+
+    def test_draws_cards(self, registry):
+        player = _make_player()
+        bt_inst = CardInstance(card_id="battle_trance")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(
+                hand=[bt_inst],
+                draw=[CardInstance(card_id="strike") for _ in range(10)],
+            ),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("battle_trance")
+        interp.play_card(card_def, battle, bt_inst)
+
+        # Drew 3 cards
+        assert len(battle.card_piles.hand) == 3
+
+    def test_blocks_subsequent_draws(self, registry):
+        """After Battle Trance, interpreter draw_cards actions are blocked."""
+        from sts_gen.ir.actions import ActionNode, ActionType
+
+        player = _make_player()
+        bt_inst = CardInstance(card_id="battle_trance")
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(
+                hand=[bt_inst],
+                draw=[CardInstance(card_id="strike") for _ in range(10)],
+            ),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("battle_trance")
+        interp.play_card(card_def, battle, bt_inst)
+        assert len(battle.card_piles.hand) == 3
+
+        # Try to draw more via interpreter — should be blocked
+        draw_node = ActionNode(action_type=ActionType.DRAW_CARDS, value=2)
+        interp.execute_node(draw_node, battle, source="player")
+        assert len(battle.card_piles.hand) == 3  # No additional draws
+
+    def test_no_draw_clears_at_end_of_turn(self, registry):
+        """No Draw is temporary — removed at end of turn."""
+        from sts_gen.sim.mechanics.status_effects import decay_statuses
+        player = _make_player()
+        apply_status(player, "No Draw", 1)
+        assert get_status_stacks(player, "No Draw") == 1
+
+        decay_statuses(player, registry.status_defs)
+        assert get_status_stacks(player, "No Draw") == 0
+
+    def test_upgraded_draws_four(self, registry):
+        player = _make_player()
+        bt_inst = CardInstance(card_id="battle_trance", upgraded=True)
+        battle = BattleState(
+            player=player,
+            enemies=[_make_enemy()],
+            card_piles=CardPiles(
+                hand=[bt_inst],
+                draw=[CardInstance(card_id="strike") for _ in range(10)],
+            ),
+            rng=GameRNG(1),
+        )
+
+        interp = ActionInterpreter(card_registry=registry.cards)
+        card_def = registry.get_card("battle_trance")
+        interp.play_card(card_def, battle, bt_inst)
+
+        assert len(battle.card_piles.hand) == 4

@@ -691,15 +691,17 @@
     "rarity": "UNCOMMON",
     "cost": 0,
     "target": "NONE",
-    "description": "Draw 3 cards. You cannot draw additional cards this turn. [SIMPLIFIED: no-draw restriction not modeled]",
+    "description": "Draw 3 cards. You cannot draw additional cards this turn.",
     "actions": [
-      {"action_type": "draw_cards", "value": 3}
+      {"action_type": "draw_cards", "value": 3},
+      {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "No Draw"}
     ],
     "upgrade": {
       "actions": [
-        {"action_type": "draw_cards", "value": 4}
+        {"action_type": "draw_cards", "value": 4},
+        {"action_type": "apply_status", "value": 1, "target": "self", "status_name": "No Draw"}
       ],
-      "description": "Draw 4 cards. You cannot draw additional cards this turn. [SIMPLIFIED: no-draw restriction not modeled]"
+      "description": "Draw 4 cards. You cannot draw additional cards this turn."
     }
   },
   {
@@ -917,17 +919,17 @@
     "rarity": "UNCOMMON",
     "cost": 1,
     "target": "SELF",
-    "description": "Exhaust all non-Attack cards in your hand. Gain 5 Block for each card Exhausted. [SIMPLIFIED: gain block + exhaust 1]",
+    "description": "Exhaust all non-Attack cards in your hand. Gain 5 Block for each card Exhausted.",
     "actions": [
-      {"action_type": "gain_block", "value": 5, "target": "self"},
-      {"action_type": "exhaust_cards", "value": 1, "target": "self"}
+      {"action_type": "gain_block", "value": 5, "target": "self", "condition": "per_non_attack_in_hand"},
+      {"action_type": "exhaust_cards", "value": -1, "condition": "non_attack"}
     ],
     "upgrade": {
       "actions": [
-        {"action_type": "gain_block", "value": 7, "target": "self"},
-        {"action_type": "exhaust_cards", "value": 1, "target": "self"}
+        {"action_type": "gain_block", "value": 7, "target": "self", "condition": "per_non_attack_in_hand"},
+        {"action_type": "exhaust_cards", "value": -1, "condition": "non_attack"}
       ],
-      "description": "Exhaust all non-Attack cards in your hand. Gain 7 Block for each card Exhausted. [SIMPLIFIED: gain block + exhaust 1]"
+      "description": "Exhaust all non-Attack cards in your hand. Gain 7 Block for each card Exhausted."
     }
   },
   {
@@ -1187,18 +1189,22 @@
     "rarity": "RARE",
     "cost": 1,
     "target": "ENEMY",
-    "description": "Deal 10 damage. If Fatal, raise your Max HP by 3. Exhaust. [SIMPLIFIED: always heals]",
+    "description": "Deal 10 damage. If Fatal, raise your Max HP by 3. Exhaust.",
     "exhaust": true,
     "actions": [
       {"action_type": "deal_damage", "value": 10, "target": "enemy"},
-      {"action_type": "heal", "value": 3, "target": "self"}
+      {"action_type": "conditional", "condition": "target_is_dead", "children": [
+        {"action_type": "heal", "value": 3, "target": "self", "condition": "raise_max_hp"}
+      ]}
     ],
     "upgrade": {
       "actions": [
         {"action_type": "deal_damage", "value": 12, "target": "enemy"},
-        {"action_type": "heal", "value": 4, "target": "self"}
+        {"action_type": "conditional", "condition": "target_is_dead", "children": [
+          {"action_type": "heal", "value": 4, "target": "self", "condition": "raise_max_hp"}
+        ]}
       ],
-      "description": "Deal 12 damage. If Fatal, raise your Max HP by 4. Exhaust. [SIMPLIFIED: always heals]"
+      "description": "Deal 12 damage. If Fatal, raise your Max HP by 4. Exhaust."
     }
   },
   {
