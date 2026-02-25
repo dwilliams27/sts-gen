@@ -169,6 +169,14 @@ class BattleState(BaseModel):
 
     actions_this_turn: int = 0
 
+    relics: list[str] = Field(default_factory=list)
+    """Relic ids equipped for this combat."""
+
+    potions: list[str | None] = Field(
+        default_factory=lambda: [None, None, None]
+    )
+    """Potion belt (3 slots). ``None`` means empty."""
+
     # -- queries -------------------------------------------------------------
 
     @property

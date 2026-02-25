@@ -23,7 +23,9 @@ from sts_gen.sim.interpreter import ActionInterpreter
 from sts_gen.sim.mechanics.block import gain_block
 from sts_gen.sim.mechanics.damage import deal_damage
 from sts_gen.sim.mechanics.card_piles import draw_cards
+from sts_gen.sim.mechanics.potions import use_potion
 from sts_gen.sim.mechanics.status_effects import apply_status, decay_statuses, has_status
+from sts_gen.sim.relic_dispatcher import RelicDispatcher
 from sts_gen.sim.triggers import TriggerDispatcher
 
 from sts_gen.sim.play_agents.base import PlayAgent
@@ -590,6 +592,7 @@ class CombatSimulator:
         self.agent = agent
         self.enemy_ai = EnemyAI(interpreter)
         self.trigger_dispatcher = TriggerDispatcher(interpreter, registry.status_defs)
+        self.relic_dispatcher = RelicDispatcher(interpreter, registry.relics)
 
     def run_combat(self, battle: BattleState) -> BattleTelemetry:
         """Run a combat to completion, returning telemetry."""
@@ -619,7 +622,15 @@ class CombatSimulator:
         enemy_moves_per_turn: list[list[str]] = []
 
         td = self.trigger_dispatcher
+        rd = self.relic_dispatcher
         has_corruption = lambda: has_status(battle.player, "Corruption")
+        relic_ids = battle.relics
+
+        # Reset relic counters at combat start
+        rd.reset_counters()
+
+        # Fire on_combat_start relics (Vajra, Anchor, Oddly Smooth Stone)
+        rd.fire("on_combat_start", battle, relic_ids)
 
         # Main combat loop
         while not battle.is_over and battle.turn < _MAX_TURNS:
@@ -627,8 +638,14 @@ class CombatSimulator:
             skip_block_clear = has_status(battle.player, "Barricade")
             battle.start_turn(clear_block=not skip_block_clear)
 
+            # Reset per-turn relic counters (Shuriken, Kunai, Ornamental Fan)
+            rd.reset_turn_counters()
+
             # Fire ON_TURN_START triggers on player (Demon Form, Brutality, Berserk)
             td.fire(battle.player, StatusTrigger.ON_TURN_START, battle, "player")
+
+            # Fire on_turn_start relics (Bag of Prep turn 1, Lantern turn 1, Horn Cleat turn 2)
+            rd.fire("on_turn_start", battle, relic_ids)
 
             if battle.is_over:
                 break
@@ -655,6 +672,21 @@ class CombatSimulator:
 
             # Player action loop
             while not battle.is_over:
+                # Offer potion use before card play
+                available_potions = self._get_available_potions(battle)
+                if available_potions:
+                    potion_choice = self.agent.choose_potion_to_use(
+                        battle, available_potions,
+                    )
+                    if potion_choice is not None:
+                        slot, potion_def, potion_target = potion_choice
+                        use_potion(potion_def, battle, self.interpreter, potion_target)
+                        battle.potions[slot] = None
+                        battle._check_battle_over()
+                        if battle.is_over:
+                            break
+                        continue  # re-loop to offer another potion or card
+
                 playable = self._get_playable_cards(battle)
                 choice = self.agent.choose_card_to_play(battle, playable)
 
@@ -698,9 +730,10 @@ class CombatSimulator:
 
                 # --- Trigger-based post-card-play hooks ---
 
-                # ON_ATTACK_PLAYED (Rage)
+                # ON_ATTACK_PLAYED (Rage) + relic (Nunchaku, Shuriken, Kunai, Fan)
                 if card_def.type == CardType.ATTACK:
                     td.fire(battle.player, StatusTrigger.ON_ATTACK_PLAYED, battle, "player")
+                    rd.fire("on_attack_played", battle, relic_ids)
 
                 # ON_CARD_EXHAUSTED (Dark Embrace, Feel No Pain) + per-card on_exhaust (Sentinel)
                 newly_exhausted = [
@@ -752,14 +785,11 @@ class CombatSimulator:
             # Decay player statuses (vuln, weak, frail, entangled, temporary statuses)
             decay_statuses(battle.player, self.registry.status_defs)
 
-            # Fire ON_TURN_END on player (Metallicize, Combust)
+            # Fire ON_TURN_END on player (Metallicize, Combust, Regeneration)
             td.fire(battle.player, StatusTrigger.ON_TURN_END, battle, "player")
 
-            # ON_HP_LOSS from Combust (triggers Rupture)
-            # Check if Combust caused HP loss
-            # (Combust fires lose_hp which is direct HP loss from a power,
-            #  but in real STS, Combust does trigger Rupture)
-            # This is handled by the turn-end trigger itself.
+            # Fire on_turn_end relics (Orichalcum)
+            rd.fire("on_turn_end", battle, relic_ids)
 
             if battle.is_over:
                 break
@@ -789,6 +819,10 @@ class CombatSimulator:
                                 battle.player, StatusTrigger.ON_ATTACKED,
                                 battle, "player", attacker_idx=i,
                             )
+                            rd.fire(
+                                "on_attacked", battle, relic_ids,
+                                attacker_idx=i,
+                            )
 
                 # Fire ON_TURN_END on enemy (Ritual, Metallicize)
                 td.fire(enemy, StatusTrigger.ON_TURN_END, battle, str(i))
@@ -800,6 +834,13 @@ class CombatSimulator:
         if not battle.is_over:
             battle.is_over = True
             battle.battle_result = "loss"
+
+        # Fire on_combat_end relics (Burning Blood, Meat on the Bone)
+        # Temporarily clear is_over so interpreter executes actions
+        if battle.battle_result == "win":
+            battle.is_over = False
+            rd.fire("on_combat_end", battle, relic_ids)
+            battle.is_over = True
 
         return BattleTelemetry(
             enemy_ids=enemy_ids,
@@ -1119,6 +1160,19 @@ class CombatSimulator:
                 playable.append((card_inst, card_def))
 
         return playable
+
+    def _get_available_potions(
+        self,
+        battle: BattleState,
+    ) -> list[tuple[int, Any]]:
+        """Return non-empty potion slots as (slot_index, potion_def) tuples."""
+        available = []
+        for i, potion_id in enumerate(battle.potions):
+            if potion_id is not None:
+                potion_def = self.registry.get_potion(potion_id)
+                if potion_def is not None:
+                    available.append((i, potion_def))
+        return available
 
     def _move_innate_to_top(self, battle: BattleState) -> None:
         """Move cards with innate=True to the top of the draw pile.

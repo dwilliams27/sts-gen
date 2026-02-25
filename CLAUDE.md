@@ -65,8 +65,9 @@ src/sts_gen/
     telemetry.py               # BattleTelemetry, RunTelemetry dataclasses
 
     content/
-      registry.py              # ContentRegistry — loads and serves cards, enemies, status defs
+      registry.py              # ContentRegistry — loads and serves cards, enemies, status defs, relics, potions
 
+    relic_dispatcher.py          # RelicDispatcher — fires relic triggers during combat
     play_agents/
       base.py                  # PlayAgent ABC
       random_agent.py          # RandomAgent (random valid actions, 10% end-turn chance)
@@ -75,9 +76,11 @@ data/vanilla/
   ironclad_cards.json          # 80 Ironclad cards in IR format (all wiki-verified)
   enemies.json                 # 25 Act 1 enemies (wiki-verified)
   encounters.json              # Act 1 encounter compositions (easy/normal/elite/boss pools)
-  status_effects.json          # 16 status effect definitions (all wiki-verified)
+  status_effects.json          # 17 status effect definitions (all wiki-verified, includes Regeneration)
+  relics.json                  # 14 relic definitions (wiki-verified)
+  potions.json                 # 11 potion definitions (wiki-verified)
 
-tests/                         # Mirrors src/ structure, 323 tests
+tests/                         # Mirrors src/ structure, 416 tests
 ```
 
 ## Phase 2 Plan
@@ -99,7 +102,7 @@ Full plan: `docs/PHASE2.md`
 - [x] 2B: Full Ironclad card pool (80 cards, wiki-verified: 3 basic + 20 common + 36 uncommon + 16 rare + 5 status)
 - [x] 2C: Full Act 1 enemy pool (25 enemies + encounters, wiki-verified)
 - [x] 2D: Status trigger system
-- [ ] 2E: Relics + potions
+- [x] 2E: Relics + potions
 - [ ] 2F: Map generator + run manager
 - [ ] 2G: HeuristicAgent
 - [ ] 2H: Integration + exit gate
@@ -107,8 +110,9 @@ Full plan: `docs/PHASE2.md`
 ## What Doesn't Exist Yet
 
 - HeuristicAgent (only RandomAgent exists)
-- Map generation, run manager, rewards, shops, relics, potions in sim
-- ~~Status trigger system~~ (DONE: TriggerDispatcher + 16 wiki-verified status definitions fire generically)
+- Map generation, run manager, rewards, shops in sim
+- ~~Status trigger system~~ (DONE: TriggerDispatcher + 17 wiki-verified status definitions fire generically)
+- ~~Relics + potions~~ (DONE: RelicDispatcher + 14 relics + 11 potions, all wiki-verified)
 - UpgradeDefinition now supports exhaust/innate overrides (Limit Break+, Brutality+)
 - Some cards are simplified (marked [SIMPLIFIED] in description): Armaments, Dual Wield, Rampage, Blood for Blood, Searing Blow, Fiend Fire, etc.
 - Enemy reactive hooks (Enrage, Sharp Hide, Curl Up, Angry, split, escape, mode shift, sleep/wake) are implemented directly in runner.py — not yet generalized through the trigger system

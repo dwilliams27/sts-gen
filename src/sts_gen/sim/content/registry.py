@@ -21,6 +21,8 @@ from sts_gen.ir.cards import (
     UpgradeDefinition,
 )
 from sts_gen.ir.content_set import ContentSet
+from sts_gen.ir.potions import PotionDefinition, PotionRarity
+from sts_gen.ir.relics import RelicDefinition, RelicTier
 from sts_gen.ir.status_effects import (
     StackBehavior,
     StatusEffectDefinition,
@@ -33,6 +35,8 @@ _DEFAULT_CARDS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "ironclad_cards.json"
 _DEFAULT_ENEMIES_PATH = _PROJECT_ROOT / "data" / "vanilla" / "enemies.json"
 _DEFAULT_ENCOUNTERS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "encounters.json"
 _DEFAULT_STATUS_EFFECTS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "status_effects.json"
+_DEFAULT_RELICS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "relics.json"
+_DEFAULT_POTIONS_PATH = _PROJECT_ROOT / "data" / "vanilla" / "potions.json"
 
 
 def _parse_action_node(raw: dict[str, Any]) -> ActionNode:
@@ -61,6 +65,34 @@ def _parse_status_effect_definition(raw: dict[str, Any]) -> StatusEffectDefiniti
         triggers=triggers,
         decay_per_turn=raw.get("decay_per_turn", 0),
         min_stacks=raw.get("min_stacks", 0),
+    )
+
+
+def _parse_relic_definition(raw: dict[str, Any]) -> RelicDefinition:
+    """Parse a raw JSON dict into a RelicDefinition."""
+    actions = [_parse_action_node(a) for a in raw.get("actions", [])]
+    return RelicDefinition(
+        id=raw["id"],
+        name=raw["name"],
+        tier=RelicTier(raw["tier"]),
+        description=raw["description"],
+        trigger=raw["trigger"],
+        actions=actions,
+        counter=raw.get("counter"),
+        counter_per_turn=raw.get("counter_per_turn", False),
+    )
+
+
+def _parse_potion_definition(raw: dict[str, Any]) -> PotionDefinition:
+    """Parse a raw JSON dict into a PotionDefinition."""
+    actions = [_parse_action_node(a) for a in raw.get("actions", [])]
+    return PotionDefinition(
+        id=raw["id"],
+        name=raw["name"],
+        rarity=PotionRarity(raw["rarity"]),
+        description=raw["description"],
+        target=CardTarget(raw["target"]),
+        actions=actions,
     )
 
 
@@ -134,6 +166,8 @@ class ContentRegistry:
         self.enemies: dict[str, dict[str, Any]] = {}
         self.encounters: dict[str, dict[str, Any]] = {}
         self.status_defs: dict[str, StatusEffectDefinition] = {}
+        self.relics: dict[str, RelicDefinition] = {}
+        self.potions: dict[str, PotionDefinition] = {}
 
     # ------------------------------------------------------------------
     # Vanilla content loading
@@ -223,6 +257,52 @@ class ContentRegistry:
     def get_status_def(self, status_id: str) -> StatusEffectDefinition | None:
         """Return the :class:`StatusEffectDefinition` for *status_id*, or ``None``."""
         return self.status_defs.get(status_id)
+
+    # ------------------------------------------------------------------
+    # Relic loading
+    # ------------------------------------------------------------------
+
+    def load_vanilla_relics(self, path: str | Path | None = None) -> None:
+        """Load vanilla relic definitions from a JSON file."""
+        if path is None:
+            path = _DEFAULT_RELICS_PATH
+        path = Path(path)
+
+        with open(path) as f:
+            raw_relics: list[dict[str, Any]] = json.load(f)
+
+        for raw in raw_relics:
+            if "_section" in raw:
+                continue
+            relic = _parse_relic_definition(raw)
+            self.relics[relic.id] = relic
+
+    def get_relic(self, relic_id: str) -> RelicDefinition | None:
+        """Return the :class:`RelicDefinition` for *relic_id*, or ``None``."""
+        return self.relics.get(relic_id)
+
+    # ------------------------------------------------------------------
+    # Potion loading
+    # ------------------------------------------------------------------
+
+    def load_vanilla_potions(self, path: str | Path | None = None) -> None:
+        """Load vanilla potion definitions from a JSON file."""
+        if path is None:
+            path = _DEFAULT_POTIONS_PATH
+        path = Path(path)
+
+        with open(path) as f:
+            raw_potions: list[dict[str, Any]] = json.load(f)
+
+        for raw in raw_potions:
+            if "_section" in raw:
+                continue
+            potion = _parse_potion_definition(raw)
+            self.potions[potion.id] = potion
+
+    def get_potion(self, potion_id: str) -> PotionDefinition | None:
+        """Return the :class:`PotionDefinition` for *potion_id*, or ``None``."""
+        return self.potions.get(potion_id)
 
     # ------------------------------------------------------------------
     # Custom content loading

@@ -1,0 +1,128 @@
+[
+  {"_section": "Common potions"},
+
+  {
+    "id": "fire_potion",
+    "name": "Fire Potion",
+    "rarity": "COMMON",
+    "description": "Deal 20 damage to target enemy.",
+    "target": "ENEMY",
+    "actions": [
+      {"action_type": "deal_damage", "value": 20, "target": "enemy", "condition": "no_strength"}
+    ]
+  },
+
+  {
+    "id": "block_potion",
+    "name": "Block Potion",
+    "rarity": "COMMON",
+    "description": "Gain 12 Block.",
+    "target": "SELF",
+    "actions": [
+      {"action_type": "gain_block", "value": 12, "target": "self", "condition": "raw"}
+    ]
+  },
+
+  {
+    "id": "strength_potion",
+    "name": "Strength Potion",
+    "rarity": "COMMON",
+    "description": "Gain 2 Strength.",
+    "target": "SELF",
+    "actions": [
+      {"action_type": "gain_strength", "value": 2, "target": "self"}
+    ]
+  },
+
+  {
+    "id": "fear_potion",
+    "name": "Fear Potion",
+    "rarity": "COMMON",
+    "description": "Apply 3 Vulnerable to target enemy.",
+    "target": "ENEMY",
+    "actions": [
+      {"action_type": "apply_status", "value": 3, "status_name": "vulnerable", "target": "enemy"}
+    ]
+  },
+
+  {
+    "id": "weak_potion",
+    "name": "Weak Potion",
+    "rarity": "COMMON",
+    "description": "Apply 3 Weak to target enemy.",
+    "target": "ENEMY",
+    "actions": [
+      {"action_type": "apply_status", "value": 3, "status_name": "weak", "target": "enemy"}
+    ]
+  },
+
+  {
+    "id": "swift_potion",
+    "name": "Swift Potion",
+    "rarity": "COMMON",
+    "description": "Draw 3 cards.",
+    "target": "SELF",
+    "actions": [
+      {"action_type": "draw_cards", "value": 3}
+    ]
+  },
+
+  {"_section": "Uncommon potions"},
+
+  {
+    "id": "dexterity_potion",
+    "name": "Dexterity Potion",
+    "rarity": "UNCOMMON",
+    "description": "Gain 2 Dexterity.",
+    "target": "SELF",
+    "actions": [
+      {"action_type": "gain_dexterity", "value": 2, "target": "self"}
+    ]
+  },
+
+  {
+    "id": "energy_potion",
+    "name": "Energy Potion",
+    "rarity": "UNCOMMON",
+    "description": "Gain 2 Energy.",
+    "target": "SELF",
+    "actions": [
+      {"action_type": "gain_energy", "value": 2}
+    ]
+  },
+
+  {
+    "id": "explosive_potion",
+    "name": "Explosive Potion",
+    "rarity": "UNCOMMON",
+    "description": "Deal 10 damage to ALL enemies.",
+    "target": "ALL_ENEMIES",
+    "actions": [
+      {"action_type": "deal_damage", "value": 10, "target": "all_enemies", "condition": "no_strength"}
+    ]
+  },
+
+  {
+    "id": "regen_potion",
+    "name": "Regen Potion",
+    "rarity": "UNCOMMON",
+    "description": "Gain 5 Regeneration.",
+    "target": "SELF",
+    "actions": [
+      {"action_type": "apply_status", "value": 5, "status_name": "Regeneration", "target": "self"}
+    ]
+  },
+
+  {"_section": "Rare potions"},
+
+  {
+    "id": "fruit_juice",
+    "name": "Fruit Juice",
+    "rarity": "RARE",
+    "description": "Gain 5 Max HP.",
+    "target": "SELF",
+    "actions": [
+      {"action_type": "heal", "value": 5, "target": "self", "condition": "raise_max_hp"}
+    ]
+  }
+]

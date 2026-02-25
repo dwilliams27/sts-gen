@@ -58,6 +58,9 @@ class _SingleCardAgent(PlayAgent):
     def choose_card_reward(self, cards, deck):
         return None
 
+    def choose_potion_to_use(self, battle, available_potions):
+        return None
+
 
 class _NoPlayAgent(PlayAgent):
     """Agent that never plays cards — just ends turn immediately."""
@@ -66,6 +69,9 @@ class _NoPlayAgent(PlayAgent):
         return None
 
     def choose_card_reward(self, cards, deck):
+        return None
+
+    def choose_potion_to_use(self, battle, available_potions):
         return None
 
 

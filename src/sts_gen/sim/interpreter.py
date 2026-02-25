@@ -982,6 +982,14 @@ class ActionInterpreter:
                     return False
             return True
 
+        # turn_eq:<N> — true when battle.turn equals N (Bag of Preparation, Lantern, Horn Cleat)
+        if condition.startswith("turn_eq:"):
+            try:
+                n = int(condition.split(":", 1)[1].strip())
+            except ValueError:
+                return False
+            return battle.turn == n
+
         # enemy_intends_attack — Spot Weakness: chosen target intends an attack
         if condition == "enemy_intends_attack":
             if chosen_target is not None and 0 <= chosen_target < len(battle.enemies):

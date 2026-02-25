@@ -1,0 +1,201 @@
+[
+  {"_section": "Starter relics"},
+
+  {
+    "id": "burning_blood",
+    "name": "Burning Blood",
+    "tier": "STARTER",
+    "description": "At the end of combat, heal 6 HP.",
+    "trigger": "on_combat_end",
+    "actions": [
+      {"action_type": "heal", "value": 6, "target": "self"}
+    ]
+  },
+
+  {"_section": "Common relics"},
+
+  {
+    "id": "vajra",
+    "name": "Vajra",
+    "tier": "COMMON",
+    "description": "At the start of each combat, gain 1 Strength.",
+    "trigger": "on_combat_start",
+    "actions": [
+      {"action_type": "gain_strength", "value": 1, "target": "self"}
+    ]
+  },
+
+  {
+    "id": "anchor",
+    "name": "Anchor",
+    "tier": "COMMON",
+    "description": "At the start of each combat, gain 10 Block.",
+    "trigger": "on_combat_start",
+    "actions": [
+      {"action_type": "gain_block", "value": 10, "target": "self", "condition": "raw"}
+    ]
+  },
+
+  {
+    "id": "oddly_smooth_stone",
+    "name": "Oddly Smooth Stone",
+    "tier": "COMMON",
+    "description": "At the start of each combat, gain 1 Dexterity.",
+    "trigger": "on_combat_start",
+    "actions": [
+      {"action_type": "gain_dexterity", "value": 1, "target": "self"}
+    ]
+  },
+
+  {
+    "id": "bag_of_preparation",
+    "name": "Bag of Preparation",
+    "tier": "COMMON",
+    "description": "At the start of each combat, draw 2 additional cards.",
+    "trigger": "on_turn_start",
+    "actions": [
+      {
+        "action_type": "conditional",
+        "condition": "turn_eq:1",
+        "children": [
+          {"action_type": "draw_cards", "value": 2}
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "lantern",
+    "name": "Lantern",
+    "tier": "COMMON",
+    "description": "Gain 1 Energy on the first turn of each combat.",
+    "trigger": "on_turn_start",
+    "actions": [
+      {
+        "action_type": "conditional",
+        "condition": "turn_eq:1",
+        "children": [
+          {"action_type": "gain_energy", "value": 1}
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "orichalcum",
+    "name": "Orichalcum",
+    "tier": "COMMON",
+    "description": "If you end your turn without Block, gain 6 Block.",
+    "trigger": "on_turn_end",
+    "actions": [
+      {
+        "action_type": "conditional",
+        "condition": "no_block",
+        "children": [
+          {"action_type": "gain_block", "value": 6, "target": "self", "condition": "raw"}
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "bronze_scales",
+    "name": "Bronze Scales",
+    "tier": "COMMON",
+    "description": "Whenever you are attacked, deal 3 damage back.",
+    "trigger": "on_attacked",
+    "actions": [
+      {"action_type": "deal_damage", "value": 3, "target": "attacker", "condition": "no_strength"}
+    ]
+  },
+
+  {
+    "id": "nunchaku",
+    "name": "Nunchaku",
+    "tier": "COMMON",
+    "description": "Every time you play 10 Attacks, gain 1 Energy.",
+    "trigger": "on_attack_played",
+    "counter": 10,
+    "counter_per_turn": false,
+    "actions": [
+      {"action_type": "gain_energy", "value": 1}
+    ]
+  },
+
+  {"_section": "Uncommon relics"},
+
+  {
+    "id": "horn_cleat",
+    "name": "Horn Cleat",
+    "tier": "UNCOMMON",
+    "description": "At the start of your 2nd turn, gain 14 Block.",
+    "trigger": "on_turn_start",
+    "actions": [
+      {
+        "action_type": "conditional",
+        "condition": "turn_eq:2",
+        "children": [
+          {"action_type": "gain_block", "value": 14, "target": "self", "condition": "raw"}
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "meat_on_the_bone",
+    "name": "Meat on the Bone",
+    "tier": "UNCOMMON",
+    "description": "If your HP is at or below 50% at the end of combat, heal 12 HP.",
+    "trigger": "on_combat_end",
+    "actions": [
+      {
+        "action_type": "conditional",
+        "condition": "hp_below:51",
+        "children": [
+          {"action_type": "heal", "value": 12, "target": "self"}
+        ]
+      }
+    ]
+  },
+
+  {"_section": "Rare relics"},
+
+  {
+    "id": "shuriken",
+    "name": "Shuriken",
+    "tier": "RARE",
+    "description": "Every time you play 3 Attacks in a single turn, gain 1 Strength.",
+    "trigger": "on_attack_played",
+    "counter": 3,
+    "counter_per_turn": true,
+    "actions": [
+      {"action_type": "gain_strength", "value": 1, "target": "self"}
+    ]
+  },
+
+  {
+    "id": "kunai",
+    "name": "Kunai",
+    "tier": "RARE",
+    "description": "Every time you play 3 Attacks in a single turn, gain 1 Dexterity.",
+    "trigger": "on_attack_played",
+    "counter": 3,
+    "counter_per_turn": true,
+    "actions": [
+      {"action_type": "gain_dexterity", "value": 1, "target": "self"}
+    ]
+  },
+
+  {
+    "id": "ornamental_fan",
+    "name": "Ornamental Fan",
+    "tier": "RARE",
+    "description": "Every time you play 3 Attacks in a single turn, gain 4 Block.",
+    "trigger": "on_attack_played",
+    "counter": 3,
+    "counter_per_turn": true,
+    "actions": [
+      {"action_type": "gain_block", "value": 4, "target": "self", "condition": "raw"}
+    ]
+  }
+]

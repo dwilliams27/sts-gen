@@ -213,6 +213,22 @@
     }
   },
 
+  {"_section": "Regeneration (potion-applied)"},
+
+  {
+    "id": "Regeneration",
+    "name": "Regeneration",
+    "description": "At the end of each turn, heal {stacks} HP, then lose 1 stack.",
+    "is_debuff": false,
+    "stack_behavior": "INTENSITY",
+    "decay_per_turn": 1,
+    "triggers": {
+      "ON_TURN_END": [
+        {"action_type": "heal", "value": 1, "target": "self", "condition": "per_stack"}
+      ]
+    }
+  },
+
   {"_section": "PASSIVE powers"},
 
   {

@@ -563,7 +563,7 @@ class TestCorruption:
 class TestStatusEffectRegistry:
     """Verify status effect definitions load correctly."""
 
-    def test_all_16_statuses_loaded(self, registry):
+    def test_all_17_statuses_loaded(self, registry):
         expected = {
             "Demon Form", "Brutality", "Berserk", "Ritual",
             "Metallicize", "Combust",
@@ -574,6 +574,7 @@ class TestStatusEffectRegistry:
             "Juggernaut",
             "Rupture",
             "Barricade", "Corruption",
+            "Regeneration",
         }
         assert set(registry.status_defs.keys()) == expected
 

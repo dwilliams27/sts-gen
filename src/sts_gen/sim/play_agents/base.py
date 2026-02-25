@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from sts_gen.ir.cards import CardDefinition
+    from sts_gen.ir.potions import PotionDefinition
     from sts_gen.sim.core.game_state import BattleState, CardInstance
 
 
@@ -67,4 +68,30 @@ class PlayAgent(ABC):
         -------
         CardDefinition | None
             The chosen card, or ``None`` to skip the reward.
+        """
+
+    @abstractmethod
+    def choose_potion_to_use(
+        self,
+        battle: BattleState,
+        available_potions: list[tuple[int, PotionDefinition]],
+    ) -> tuple[int, PotionDefinition, int | None] | None:
+        """Choose a potion to use before playing a card.
+
+        Parameters
+        ----------
+        battle:
+            The current combat state.
+        available_potions:
+            List of ``(slot_index, potion_definition)`` for each non-empty
+            potion slot.
+
+        Returns
+        -------
+        tuple[int, PotionDefinition, int | None] | None
+            A 3-tuple of ``(slot_index, potion_definition, chosen_target)``
+            where *chosen_target* is the enemy index for ENEMY-targeted
+            potions, or ``None`` for self-target / AoE potions.
+
+            Return ``None`` to skip using a potion this action.
         """

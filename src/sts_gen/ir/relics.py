@@ -49,7 +49,15 @@ class RelicDefinition(BaseModel):
     """The action tree executed when the trigger fires."""
 
     counter: int | None = None
-    """Initial counter value for relics that track charges / uses.
+    """Threshold for counter-based relics (e.g. 10 for Nunchaku, 3 for Shuriken).
 
-    ``None`` means the relic does not use a visible counter.
+    ``None`` means the relic does not use a counter.
+    """
+
+    counter_per_turn: bool = False
+    """If ``True``, the counter resets to 0 at the start of each turn.
+
+    Used by Shuriken, Kunai, Ornamental Fan (counter resets per turn, can
+    trigger multiple times per turn).  Nunchaku is ``False`` (counter persists
+    across turns).
     """

@@ -22,6 +22,7 @@ from sts_gen.sim.play_agents.base import PlayAgent
 
 if TYPE_CHECKING:
     from sts_gen.ir.cards import CardDefinition
+    from sts_gen.ir.potions import PotionDefinition
     from sts_gen.sim.core.game_state import BattleState, CardInstance
 
 from sts_gen.ir.cards import CardTarget
@@ -94,3 +95,29 @@ class RandomAgent(PlayAgent):
         if not cards:
             return None
         return self._rng.random_choice(cards)
+
+    def choose_potion_to_use(
+        self,
+        battle: BattleState,
+        available_potions: list[tuple[int, PotionDefinition]],
+    ) -> tuple[int, PotionDefinition, int | None] | None:
+        """5% chance to use a random potion; pick random target for ENEMY potions."""
+        if not available_potions:
+            return None
+
+        if self._rng.random_float() >= 0.05:
+            return None
+
+        slot, potion_def = self._rng.random_choice(available_potions)
+
+        chosen_target: int | None = None
+        if potion_def.target == CardTarget.ENEMY:
+            living_indices = [
+                i for i, e in enumerate(battle.enemies) if not e.is_dead
+            ]
+            if living_indices:
+                chosen_target = self._rng.random_choice(living_indices)
+            else:
+                return None
+
+        return slot, potion_def, chosen_target
