@@ -110,6 +110,6 @@ Full plan: `docs/PHASE2.md`
 - Map generation, run manager, rewards, shops, relics, potions in sim
 - ~~Status trigger system~~ (DONE: TriggerDispatcher + 16 wiki-verified status definitions fire generically)
 - UpgradeDefinition now supports exhaust/innate overrides (Limit Break+, Brutality+)
-- Some cards are simplified (marked [SIMPLIFIED] in description): Armaments, Dual Wield, Rampage, Blood for Blood, Searing Blow, Feed, Fiend Fire, Reaper, Exhume, Second Wind, etc.
+- Some cards are simplified (marked [SIMPLIFIED] in description): Armaments, Dual Wield, Rampage, Blood for Blood, Searing Blow, Fiend Fire, etc.
 - Enemy reactive hooks (Enrage, Sharp Hide, Curl Up, Angry, split, escape, mode shift, sleep/wake) are implemented directly in runner.py — not yet generalized through the trigger system
 - LLM agents, balance analysis, mod builder
