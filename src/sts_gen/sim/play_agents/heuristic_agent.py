@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 _HARD_FIGHT_IDS = frozenset({
     "gremlin_nob", "lagavulin", "sentry",
     "the_guardian", "hexaghost", "slime_boss",
+    "blue_slaver", "red_slaver",
 })
 
 # Card reward tier scores (0-100)
@@ -168,12 +169,15 @@ class HeuristicAgent(PlayAgent):
         incoming = self._incoming_damage(battle)
         nob_fight = self._is_nob_fight(battle)
 
-        # Filter out skills in Nob fight
+        # Filter out skills in Nob fight — unless incoming is lethal
         if nob_fight:
-            playable_cards = [
-                (ci, cd) for ci, cd in playable_cards
-                if cd.type != CardType.SKILL
-            ]
+            effective_incoming = incoming - player.block
+            lethal = effective_incoming >= player.current_hp and effective_incoming > 0
+            if not lethal:
+                playable_cards = [
+                    (ci, cd) for ci, cd in playable_cards
+                    if cd.type != CardType.SKILL
+                ]
             if not playable_cards:
                 return None
 
@@ -256,21 +260,25 @@ class HeuristicAgent(PlayAgent):
         for card in cards:
             score = _CARD_TIER_SCORES.get(card.id, 30)
 
-            # Penalize adding cards to a bloated deck
-            if deck_size > 15 and score < 70:
-                score -= (deck_size - 15) * 3
+            # Penalize adding cards to a bloated deck (only kicks in past 22)
+            if deck_size > 22 and score < 70:
+                score -= (deck_size - 22) * 2
 
             # Penalize duplicates
             copies = sum(1 for cid in deck if cid == card.id)
             if copies >= 2:
-                score -= 30
+                score -= 20
 
             if score > best_score:
                 best_score = score
                 best_card = card
 
-        # Skip if best option is bad and deck is large
-        if best_score < 25 and deck_size > 20:
+        # Never skip when deck is thin — any card helps
+        if deck_size < 18:
+            return best_card
+
+        # Skip only if best option is truly bad and deck is large
+        if best_score < 15 and deck_size > 25:
             return None
 
         return best_card
@@ -286,6 +294,7 @@ class HeuristicAgent(PlayAgent):
         player = battle.player
         incoming = self._incoming_damage(battle)
         primary_idx = self._best_target(battle)
+        n_living = len(battle.living_enemies)
 
         # --- Lethal defense: use defensive potion if incoming would kill ---
         effective_incoming = incoming - player.block
@@ -296,27 +305,43 @@ class HeuristicAgent(PlayAgent):
                     return slot, pdef, target
 
         # --- Hard fight offense: use offensive potions turns 1-2 ---
-        if self._is_fight_hard(battle) and battle.turn <= 2:
+        hard = self._is_fight_hard(battle)
+        if hard and battle.turn <= 2:
             for slot, pdef in available_potions:
                 if pdef.id in ("strength_potion", "fear_potion", "dexterity_potion"):
                     target = self._resolve_potion_target(pdef, battle, primary_idx)
                     return slot, pdef, target
 
-        # --- Secure kill: fire potion can kill a low-HP enemy ---
+        # --- Multi-enemy offense: use offensive potions turn 1 ---
+        if n_living >= 2 and battle.turn <= 1:
+            for slot, pdef in available_potions:
+                if pdef.id in ("strength_potion", "fear_potion"):
+                    target = self._resolve_potion_target(pdef, battle, primary_idx)
+                    return slot, pdef, target
+
+        # --- Secure kill: fire/explosive potion can kill a low-HP enemy ---
         for slot, pdef in available_potions:
-            if pdef.id == "fire_potion":
+            if pdef.id in ("fire_potion", "explosive_potion"):
                 for i, enemy in enumerate(battle.enemies):
-                    if not enemy.is_dead and (enemy.current_hp + enemy.block) <= 20:
+                    if not enemy.is_dead and (enemy.current_hp + enemy.block) <= 25:
                         return slot, pdef, i
 
-        # --- Low HP defense: use any defensive potion when HP < 30% ---
+        # --- Proactive defense: use defensive potions when HP < 50% ---
         hp_ratio = player.current_hp / max(player.max_hp, 1)
-        if hp_ratio < 0.30:
+        if hp_ratio < 0.50 and incoming > 0:
             for slot, pdef in available_potions:
                 if pdef.id in (
                     "block_potion", "regen_potion", "weak_potion",
                     "dexterity_potion",
                 ):
+                    target = self._resolve_potion_target(pdef, battle, primary_idx)
+                    return slot, pdef, target
+
+        # --- Hard fight: use any remaining offensive potion ---
+        if hard and battle.turn <= 3:
+            for slot, pdef in available_potions:
+                if pdef.id in ("fire_potion", "explosive_potion", "energy_potion",
+                               "swift_potion"):
                     target = self._resolve_potion_target(pdef, battle, primary_idx)
                     return slot, pdef, target
 
@@ -330,10 +355,10 @@ class HeuristicAgent(PlayAgent):
     ) -> str:
         hp_ratio = player.current_hp / max(player.max_hp, 1)
 
-        if hp_ratio <= 0.50:
+        if hp_ratio <= 0.60:
             return "rest"
 
-        if hp_ratio > 0.65:
+        if hp_ratio > 0.75:
             # Check if we have a high-priority upgrade target
             for ci in deck:
                 if not ci.upgraded and _UPGRADE_SCORES.get(ci.card_id, 0) >= 80:

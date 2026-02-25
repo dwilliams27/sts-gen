@@ -362,7 +362,7 @@ class TestCardPlayPriority:
         assert cd.type == CardType.ATTACK
 
     def test_nob_filter_skills(self, agent: HeuristicAgent, registry: ContentRegistry):
-        """Should not play skills against Gremlin Nob."""
+        """Should not play skills against Gremlin Nob when not lethal."""
         nob = _make_enemy(enemy_id="gremlin_nob", hp=100)
         nob.name = "Gremlin Nob"
         nob.intent_damage = 14
@@ -376,6 +376,24 @@ class TestCardPlayPriority:
         assert result is not None
         _, cd, _ = result
         assert cd.type == CardType.ATTACK
+
+    def test_nob_allows_skills_when_lethal(self, agent: HeuristicAgent, registry: ContentRegistry):
+        """Should allow skills against Nob when incoming is lethal."""
+        nob = _make_enemy(enemy_id="gremlin_nob", hp=100)
+        nob.name = "Gremlin Nob"
+        nob.intent_damage = 30
+        nob.intent_hits = 1
+        battle = _make_battle(
+            hand_ids=["defend", "shrug_it_off"],
+            player=_make_player(current_hp=20),
+            enemies=[nob],
+        )
+        playable = _playable(registry, battle)
+        result = agent.choose_card_to_play(battle, playable)
+        assert result is not None
+        _, cd, _ = result
+        # Should play a block card to survive
+        assert cd.type == CardType.SKILL
 
     def test_zero_cost_plays(self, agent: HeuristicAgent, registry: ContentRegistry):
         """Should play zero-cost cards when nothing higher priority."""
@@ -446,7 +464,7 @@ class TestCardReward:
             registry.get_card("pommel_strike"),
             registry.get_card("anger"),
         ]
-        # Already have 2 pommel_strikes — -30 penalty (77 -> 47 < anger 65)
+        # Already have 2 pommel_strikes — -20 penalty (77 -> 57 < anger 65)
         deck = ["pommel_strike", "pommel_strike"] + ["strike"] * 5 + ["defend"] * 4
         result = agent.choose_card_reward(cards, deck)
         assert result is not None
@@ -459,10 +477,10 @@ class TestCardReward:
             registry.get_card("strike"),
             registry.get_card("defend"),
         ]
-        # Large deck with bad options
-        deck = ["strike"] * 15 + ["defend"] * 10
+        # Large deck (26 cards) with bad options
+        deck = ["strike"] * 16 + ["defend"] * 10
         result = agent.choose_card_reward(cards, deck)
-        # Strike score 10, defend 8, both penalized by (25-15)*3=30 → negative
+        # Strike score 10, defend 8, both penalized by (26-20)*2=12 → negative
         assert result is None
 
     def test_empty_reward(self, agent: HeuristicAgent):
@@ -476,17 +494,17 @@ class TestCardReward:
 
 class TestRestAction:
     def test_rest_when_low_hp(self, agent: HeuristicAgent):
-        player = _make_player(current_hp=30)
+        player = _make_player(current_hp=40)  # 50% HP
         deck = [CardInstance(card_id="bash")]
         assert agent.choose_rest_action(player, deck) == "rest"
 
     def test_smith_when_healthy_and_upgrade_target(self, agent: HeuristicAgent):
-        player = _make_player(current_hp=70)
+        player = _make_player(current_hp=72)  # 90% HP, > 75% threshold
         deck = [CardInstance(card_id="bash")]  # High upgrade priority
         assert agent.choose_rest_action(player, deck) == "smith"
 
     def test_rest_when_healthy_no_upgrade(self, agent: HeuristicAgent):
-        player = _make_player(current_hp=70)
+        player = _make_player(current_hp=72)  # 90% HP
         deck = [CardInstance(card_id="strike")]  # Low upgrade priority
         assert agent.choose_rest_action(player, deck) == "rest"
 
@@ -533,6 +551,7 @@ class TestPotionUsage:
         assert pdef.id == "block_potion"
 
     def test_saves_potions_normally(self, agent: HeuristicAgent, registry: ContentRegistry):
+        """Potions saved when full HP, non-hard fight, single enemy."""
         enemy = _make_enemy(hp=50)
         enemy.intent_damage = 5
         enemy.intent_hits = 1
@@ -554,6 +573,40 @@ class TestPotionUsage:
         _, pdef, target = result
         assert pdef.id == "fire_potion"
         assert target == 0
+
+    def test_multi_enemy_offense(self, agent: HeuristicAgent, registry: ContentRegistry):
+        """Should use offensive potions turn 1 in multi-enemy fights."""
+        e1 = _make_enemy(hp=50)
+        e1.intent_damage = 10
+        e1.intent_hits = 1
+        e2 = _make_enemy(enemy_id="cultist", hp=50)
+        e2.name = "Cultist"
+        e2.intent_damage = 6
+        e2.intent_hits = 1
+        battle = _make_battle(enemies=[e1, e2])
+        battle.turn = 1
+        strength_potion = registry.get_potion("strength_potion")
+        available = [(0, strength_potion)]
+        result = agent.choose_potion_to_use(battle, available)
+        assert result is not None
+        _, pdef, _ = result
+        assert pdef.id == "strength_potion"
+
+    def test_proactive_defense(self, agent: HeuristicAgent, registry: ContentRegistry):
+        """Should use defensive potions when HP < 50% and taking damage."""
+        enemy = _make_enemy(hp=50)
+        enemy.intent_damage = 10
+        enemy.intent_hits = 1
+        battle = _make_battle(
+            player=_make_player(current_hp=35),  # 43.75% HP
+            enemies=[enemy],
+        )
+        block_potion = registry.get_potion("block_potion")
+        available = [(0, block_potion)]
+        result = agent.choose_potion_to_use(battle, available)
+        assert result is not None
+        _, pdef, _ = result
+        assert pdef.id == "block_potion"
 
 
 # ======================================================================
