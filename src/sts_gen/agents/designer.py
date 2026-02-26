@@ -7,9 +7,11 @@ outputs for gate validation at each stage.
 
 from __future__ import annotations
 
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from sts_gen.ir.content_set import ContentSet
 from sts_gen.sim.content.registry import ContentRegistry
@@ -22,6 +24,9 @@ from .schemas import (
     KeywordsOutput,
 )
 from .tools import ToolContext, register_all_tools
+
+# Default directory for run artifacts
+_DEFAULT_RUNS_DIR = Path(__file__).parent.parent.parent.parent / "data" / "runs"
 
 
 def _load_prompt() -> str:
@@ -55,6 +60,7 @@ class DesignerAgent:
         model: str = "claude-sonnet-4-20250514",
         api_key: str | None = None,
         max_retries: int = 3,
+        run_dir: Path | None = None,
     ) -> None:
         prompt_text = _load_prompt()
         self._client = ClaudeClient(
@@ -66,6 +72,12 @@ class DesignerAgent:
         self._ctx = ToolContext(registry=registry, baseline_path=baseline_path)
         register_all_tools(self._client, self._ctx)
         self._max_retries = max_retries
+
+        # Set up artifact directory for this run
+        if run_dir is None:
+            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            run_dir = _DEFAULT_RUNS_DIR / ts
+        self._run_dir = run_dir
 
     def generate(self, brief: str) -> ContentSet:
         """Run all 5 stages and return a complete ContentSet.
@@ -80,17 +92,43 @@ class DesignerAgent:
         ContentSet
             Validated content set ready for simulation or transpilation.
         """
+        # Save brief for reference
+        self._run_dir.mkdir(parents=True, exist_ok=True)
+        (self._run_dir / "brief.txt").write_text(brief)
+
         concept = self._stage_concept(brief)
+        self._save_artifact("1_concept", concept)
+
         architecture = self._stage_architecture(concept)
+        self._save_artifact("2_architecture", architecture)
+
         keywords = self._stage_keywords(concept, architecture)
+        self._save_artifact("3_keywords", keywords)
+
         card_pool = self._stage_card_pool(concept, architecture, keywords)
+        self._save_artifact("4_card_pool", card_pool)
+
         content_set = self._stage_assemble(concept, keywords, card_pool)
+        self._save_artifact("5_content_set", content_set)
+
         return content_set
 
     @property
     def usage(self) -> TokenUsage:
         """Cumulative token usage across all API calls."""
         return self._client.usage
+
+    @property
+    def run_dir(self) -> Path:
+        """Directory where this run's artifacts are saved."""
+        return self._run_dir
+
+    def _save_artifact(self, name: str, data: BaseModel | ContentSet) -> Path:
+        """Save a Pydantic model as JSON to the run directory."""
+        self._run_dir.mkdir(parents=True, exist_ok=True)
+        path = self._run_dir / f"{name}.json"
+        path.write_text(data.model_dump_json(indent=2))
+        return path
 
     # ------------------------------------------------------------------
     # Stage 1: Concept

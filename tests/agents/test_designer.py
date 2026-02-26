@@ -268,7 +268,8 @@ def _make_card_pool() -> CardPoolOutput:
 class TestDesignerAgent:
     @patch("sts_gen.agents.designer.ClaudeClient")
     def test_generate_calls_all_stages(
-        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path
+        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path,
+        tmp_path: Path,
     ) -> None:
         """generate() should call chat + structured_output for each stage."""
         mock_client = MockClient.return_value
@@ -284,7 +285,8 @@ class TestDesignerAgent:
         mock_client.chat.return_value = "OK"
 
         agent = DesignerAgent(
-            registry=registry, baseline_path=baseline_path, api_key="sk-test"
+            registry=registry, baseline_path=baseline_path, api_key="sk-test",
+            run_dir=tmp_path / "run",
         )
         result = agent.generate("A fire mage character.")
 
@@ -295,7 +297,8 @@ class TestDesignerAgent:
 
     @patch("sts_gen.agents.designer.ClaudeClient")
     def test_stage_concept_uses_brief(
-        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path
+        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path,
+        tmp_path: Path,
     ) -> None:
         """First chat message should contain the design brief."""
         mock_client = MockClient.return_value
@@ -309,7 +312,8 @@ class TestDesignerAgent:
         ]
 
         agent = DesignerAgent(
-            registry=registry, baseline_path=baseline_path, api_key="sk-test"
+            registry=registry, baseline_path=baseline_path, api_key="sk-test",
+            run_dir=tmp_path / "run",
         )
         agent.generate("A necromancer who raises the dead.")
 
@@ -320,7 +324,8 @@ class TestDesignerAgent:
 
     @patch("sts_gen.agents.designer.ClaudeClient")
     def test_validation_retry(
-        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path
+        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path,
+        tmp_path: Path,
     ) -> None:
         """Should retry on ValidationError, feeding error back via chat."""
         from pydantic import ValidationError
@@ -350,7 +355,8 @@ class TestDesignerAgent:
         mock_client.structured_output.side_effect = side_effect
 
         agent = DesignerAgent(
-            registry=registry, baseline_path=baseline_path, api_key="sk-test"
+            registry=registry, baseline_path=baseline_path, api_key="sk-test",
+            run_dir=tmp_path / "run",
         )
         result = agent.generate("A fire mage.")
 
@@ -360,7 +366,8 @@ class TestDesignerAgent:
 
     @patch("sts_gen.agents.designer.ClaudeClient")
     def test_max_retries_exceeded(
-        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path
+        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path,
+        tmp_path: Path,
     ) -> None:
         """Should raise after max_retries when structured_output always fails."""
         mock_client = MockClient.return_value
@@ -375,6 +382,7 @@ class TestDesignerAgent:
             baseline_path=baseline_path,
             api_key="sk-test",
             max_retries=2,
+            run_dir=tmp_path / "run",
         )
 
         with pytest.raises(RuntimeError, match="forced tool"):
@@ -382,7 +390,8 @@ class TestDesignerAgent:
 
     @patch("sts_gen.agents.designer.ClaudeClient")
     def test_assembly_produces_valid_content_set(
-        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path
+        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path,
+        tmp_path: Path,
     ) -> None:
         """Final ContentSet should have correct mod_id and all content."""
         mock_client = MockClient.return_value
@@ -396,7 +405,8 @@ class TestDesignerAgent:
         ]
 
         agent = DesignerAgent(
-            registry=registry, baseline_path=baseline_path, api_key="sk-test"
+            registry=registry, baseline_path=baseline_path, api_key="sk-test",
+            run_dir=tmp_path / "run",
         )
         result = agent.generate("A fire mage.")
 
@@ -476,6 +486,43 @@ class TestDesignerAgent:
 
         init_kwargs = MockClient.call_args
         assert init_kwargs.kwargs.get("max_tokens") == 64000
+
+    @patch("sts_gen.agents.designer.ClaudeClient")
+    def test_artifacts_saved(
+        self, MockClient: MagicMock, registry: ContentRegistry, baseline_path: Path,
+        tmp_path: Path,
+    ) -> None:
+        """generate() should save stage artifacts as JSON files."""
+        mock_client = MockClient.return_value
+        mock_client.usage = MagicMock()
+        mock_client.chat.return_value = "OK"
+        mock_client.structured_output.side_effect = [
+            _make_concept(),
+            _make_architecture(),
+            _make_keywords(),
+            _make_card_pool(),
+        ]
+
+        run_dir = tmp_path / "test_run"
+        agent = DesignerAgent(
+            registry=registry, baseline_path=baseline_path, api_key="sk-test",
+            run_dir=run_dir,
+        )
+        agent.generate("A fire mage.")
+
+        assert agent.run_dir == run_dir
+        assert (run_dir / "brief.txt").read_text() == "A fire mage."
+        assert (run_dir / "1_concept.json").exists()
+        assert (run_dir / "2_architecture.json").exists()
+        assert (run_dir / "3_keywords.json").exists()
+        assert (run_dir / "4_card_pool.json").exists()
+        assert (run_dir / "5_content_set.json").exists()
+
+        # Verify the final content set is valid JSON we can reload
+        import json
+        data = json.loads((run_dir / "5_content_set.json").read_text())
+        assert data["mod_id"] == "pyromancer"
+        assert len(data["cards"]) == 3
 
     def test_prompt_file_exists(self) -> None:
         """The designer system prompt file should exist and be non-empty."""
