@@ -219,10 +219,12 @@ class RunManager:
             reward_cards = generate_card_reward(
                 self.registry, reward_rng, pool=pool,
             )
+            telemetry.card_offers.append([c.id for c in reward_cards])
             chosen = self.agent.choose_card_reward(
                 reward_cards,
                 [ci.card_id for ci in game_state.deck],
             )
+            telemetry.card_picks.append(chosen.id if chosen is not None else None)
             if chosen is not None:
                 game_state.deck.append(CardInstance(card_id=chosen.id))
                 telemetry.cards_added.append(chosen.id)
@@ -365,10 +367,12 @@ class RunManager:
             # Gain random card
             reward = generate_card_reward(self.registry, rng, pool="normal")
             if reward:
+                telemetry.card_offers.append([c.id for c in reward])
                 chosen = self.agent.choose_card_reward(
                     reward,
                     [ci.card_id for ci in game_state.deck],
                 )
+                telemetry.card_picks.append(chosen.id if chosen is not None else None)
                 if chosen is not None:
                     game_state.deck.append(CardInstance(card_id=chosen.id))
                     telemetry.cards_added.append(chosen.id)

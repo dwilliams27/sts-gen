@@ -78,6 +78,12 @@ src/sts_gen/
       random_agent.py          # RandomAgent (random valid actions, 10% end-turn chance)
       heuristic_agent.py       # HeuristicAgent (priority-based heuristic play)
 
+  balance/                       # Balance analysis & baselines
+    models.py                  #   Pydantic models (CardMetrics, RelicMetrics, SynergyPair, VanillaBaseline)
+    metrics.py                 #   Pure metric computation from RunTelemetry
+    baselines.py               #   Orchestration: run sims → compute metrics → save/load JSON
+    report.py                  #   Text + LLM-context report generation
+
 data/vanilla/
   ironclad_cards.json          # 80 Ironclad cards in IR format (all wiki-verified)
   enemies.json                 # 25 Act 1 enemies (wiki-verified)
@@ -86,7 +92,9 @@ data/vanilla/
   relics.json                  # 14 relic definitions (wiki-verified)
   potions.json                 # 11 potion definitions (wiki-verified)
 
-tests/                         # Mirrors src/ structure, 539 tests
+data/baselines/                  # Generated baseline JSON files
+
+tests/                         # Mirrors src/ structure
 ```
 
 ## Phase 2 Plan
@@ -130,4 +138,4 @@ Revised ordering and rationale: `docs/ROADMAP.md`
 - No cards are marked [SIMPLIFIED] — all 80 Ironclad cards are fully implemented
 - Enemy reactive hooks (Enrage, Sharp Hide, Curl Up, Angry, split, escape, mode shift, sleep/wake) are implemented directly in runner.py — not yet generalized through the trigger system
 - Events/shops are loosely emulated (random outcomes, no real event system or shop UI)
-- LLM agents, balance analysis, mod builder
+- LLM agents, mod builder

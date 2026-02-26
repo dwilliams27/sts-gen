@@ -8,6 +8,16 @@ uv run pytest tests/ -x              # Stop on first failure
 uv run pytest tests/ -x --ignore=tests/sim/test_full_act1.py  # Fast (~6s, skip 10k-run gate)
 ```
 
+## Generate vanilla baselines
+
+```bash
+# Full baseline (50k runs, ~60s) → saves JSON + prints report
+uv run python scripts/generate_baselines.py --runs 50000
+
+# Quick baseline (1k runs, ~1s)
+uv run python scripts/generate_baselines.py --runs 1000
+```
+
 ## Full Act 1 simulation
 
 ```bash

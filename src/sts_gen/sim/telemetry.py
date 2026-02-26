@@ -80,6 +80,10 @@ class RunTelemetry:
     floors_reached: int = 0
     cards_in_deck: list[str] = field(default_factory=list)
     cards_added: list[str] = field(default_factory=list)
+    card_offers: list[list[str]] = field(default_factory=list)
+    """Each entry is the list of card IDs offered at a reward screen."""
+    card_picks: list[str | None] = field(default_factory=list)
+    """Card ID chosen at each reward screen (None if skipped)."""
     relics_collected: list[str] = field(default_factory=list)
     potions_used: int = 0
     gold_earned: int = 0
