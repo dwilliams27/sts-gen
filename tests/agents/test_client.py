@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -84,6 +85,25 @@ def _make_tool_use_response(
     return msg
 
 
+def _make_stream_cm(message: MagicMock) -> MagicMock:
+    """Wrap a mock Message in a context-manager mock matching messages.stream()."""
+    cm = MagicMock()
+    cm.__enter__ = MagicMock(return_value=cm)
+    cm.__exit__ = MagicMock(return_value=False)
+    cm.get_final_message.return_value = message
+    return cm
+
+
+def _setup_stream_responses(mock_client: MagicMock, responses: list) -> None:
+    """Configure mock_client.messages.stream to yield responses in order.
+
+    Each entry in *responses* should be a mock Message (from _make_text_response
+    or _make_tool_use_response).  They will be wrapped in stream context managers.
+    """
+    cms = [_make_stream_cm(r) for r in responses]
+    mock_client.messages.stream.side_effect = cms
+
+
 # =====================================================================
 # Init tests
 # =====================================================================
@@ -127,7 +147,7 @@ class TestChat:
         """Chat should return text from a simple end_turn response."""
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
-        mock_client.messages.create.return_value = _make_text_response("Hello!")
+        _setup_stream_responses(mock_client, [_make_text_response("Hello!")])
 
         client = ClaudeClient(api_key="sk-test")
         result = client.chat("Hi")
@@ -140,10 +160,10 @@ class TestChat:
         """Messages should accumulate across multiple chat calls."""
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
-        mock_client.messages.create.side_effect = [
+        _setup_stream_responses(mock_client, [
             _make_text_response("First"),
             _make_text_response("Second"),
-        ]
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.chat("msg1")
@@ -160,10 +180,10 @@ class TestChat:
 
         # First call: model wants to use a tool
         # Second call: model gives final answer
-        mock_client.messages.create.side_effect = [
+        _setup_stream_responses(mock_client, [
             _make_tool_use_response("my_tool", {"x": 1}),
             _make_text_response("Done!"),
-        ]
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.register_tool(
@@ -175,7 +195,7 @@ class TestChat:
 
         result = client.chat("Do something")
         assert result == "Done!"
-        assert mock_client.messages.create.call_count == 2
+        assert mock_client.messages.stream.call_count == 2
 
     @patch("sts_gen.agents.client.anthropic.Anthropic")
     def test_multiple_tool_calls_in_one_response(self, mock_cls: MagicMock) -> None:
@@ -201,10 +221,10 @@ class TestChat:
         multi_tool_msg.stop_reason = "tool_use"
         multi_tool_msg.usage = _make_usage(input_tokens=10, output_tokens=20)
 
-        mock_client.messages.create.side_effect = [
+        _setup_stream_responses(mock_client, [
             multi_tool_msg,
             _make_text_response("All done"),
-        ]
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.register_tool("tool_a", "A", {"type": "object"}, lambda d: "a_result")
@@ -225,17 +245,25 @@ class TestChat:
         assert len(tool_results) == 2
 
     @patch("sts_gen.agents.client.anthropic.Anthropic")
-    def test_unknown_tool_raises(self, mock_cls: MagicMock) -> None:
-        """Should raise KeyError when model calls an unregistered tool."""
+    def test_unknown_tool_returns_error_result(self, mock_cls: MagicMock) -> None:
+        """Unknown tool calls should return an error result, not crash."""
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
-        mock_client.messages.create.return_value = _make_tool_use_response(
-            "nonexistent", {}
-        )
+        _setup_stream_responses(mock_client, [
+            _make_tool_use_response("nonexistent", {}),
+            _make_text_response("I see that tool doesn't exist."),
+        ])
 
         client = ClaudeClient(api_key="sk-test")
-        with pytest.raises(KeyError, match="nonexistent"):
-            client.chat("Call a ghost tool")
+        result = client.chat("Call a ghost tool")
+        assert result == "I see that tool doesn't exist."
+
+        # Verify error was sent back
+        tool_result_msg = client.messages[2]  # user -> assistant -> tool_result -> ...
+        assert tool_result_msg["role"] == "user"
+        tool_result = tool_result_msg["content"][0]
+        assert tool_result["is_error"] is True
+        assert "nonexistent" in tool_result["content"]
 
     @patch("sts_gen.agents.client.anthropic.Anthropic")
     def test_handler_error_returns_error_result(self, mock_cls: MagicMock) -> None:
@@ -243,10 +271,10 @@ class TestChat:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
 
-        mock_client.messages.create.side_effect = [
+        _setup_stream_responses(mock_client, [
             _make_tool_use_response("bad_tool", {}),
             _make_text_response("Handled error"),
-        ]
+        ])
 
         def failing_handler(data):
             raise ValueError("Something broke")
@@ -270,10 +298,9 @@ class TestChat:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
 
-        # Always return tool_use — never end_turn
-        mock_client.messages.create.return_value = _make_tool_use_response(
-            "loop_tool", {}
-        )
+        # Always return tool_use — never end_turn (need enough for max_tool_rounds)
+        loop_response = _make_tool_use_response("loop_tool", {})
+        _setup_stream_responses(mock_client, [loop_response] * 4)
 
         client = ClaudeClient(api_key="sk-test", max_tool_rounds=3)
         client.register_tool(
@@ -300,9 +327,9 @@ class TestStructuredOutput:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
 
-        mock_client.messages.create.return_value = _make_tool_use_response(
-            "respond", {"name": "TestCard", "score": 42}
-        )
+        _setup_stream_responses(mock_client, [
+            _make_tool_use_response("respond", {"name": "TestCard", "score": 42}),
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         result = client.structured_output("Give me output", MyOutput)
@@ -321,15 +348,15 @@ class TestStructuredOutput:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
 
-        mock_client.messages.create.return_value = _make_tool_use_response(
-            "respond", {"value": "hello"}
-        )
+        _setup_stream_responses(mock_client, [
+            _make_tool_use_response("respond", {"value": "hello"}),
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.structured_output("Test", Simple)
 
-        # Check the create call used tool_choice
-        call_kwargs = mock_client.messages.create.call_args
+        # Check the stream call used tool_choice
+        call_kwargs = mock_client.messages.stream.call_args
         assert call_kwargs.kwargs.get("tool_choice") == {
             "type": "tool",
             "name": "respond",
@@ -337,7 +364,7 @@ class TestStructuredOutput:
 
     @patch("sts_gen.agents.client.anthropic.Anthropic")
     def test_conversation_continues_after(self, mock_cls: MagicMock) -> None:
-        """Message history should include structured output interaction."""
+        """Message history should include structured output as plain text."""
 
         class Simple(BaseModel):
             value: str
@@ -345,18 +372,20 @@ class TestStructuredOutput:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
 
-        mock_client.messages.create.return_value = _make_tool_use_response(
-            "respond", {"value": "hello"}
-        )
+        _setup_stream_responses(mock_client, [
+            _make_tool_use_response("respond", {"value": "hello"}),
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.structured_output("Test", Simple)
 
-        # Should have: user, assistant (tool_use), user (tool_result)
-        assert len(client.messages) == 3
+        # Should have: user, assistant (plain text with JSON)
+        assert len(client.messages) == 2
         assert client.messages[0]["role"] == "user"
         assert client.messages[1]["role"] == "assistant"
-        assert client.messages[2]["role"] == "user"
+        # Assistant message should be plain text, not tool_use blocks
+        assert isinstance(client.messages[1]["content"], str)
+        assert "hello" in client.messages[1]["content"]
 
 
 # =====================================================================
@@ -370,10 +399,10 @@ class TestTokenUsage:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
 
-        mock_client.messages.create.side_effect = [
+        _setup_stream_responses(mock_client, [
             _make_text_response("A", input_tokens=100, output_tokens=50),
             _make_text_response("B", input_tokens=200, output_tokens=75),
-        ]
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.chat("msg1")
@@ -389,7 +418,7 @@ class TestTokenUsage:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
 
-        mock_client.messages.create.side_effect = [
+        _setup_stream_responses(mock_client, [
             # First call: cache miss → cache write
             _make_text_response(
                 "A",
@@ -406,7 +435,7 @@ class TestTokenUsage:
                 cache_creation_input_tokens=None,
                 cache_read_input_tokens=1000,
             ),
-        ]
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.chat("msg1")
@@ -425,11 +454,11 @@ class TestTokenUsage:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
 
-        mock_client.messages.create.side_effect = [
+        _setup_stream_responses(mock_client, [
             _make_tool_use_response("my_tool", {}),   # round-trip 1
             _make_tool_use_response("my_tool", {}),   # round-trip 2
             _make_text_response("Done"),               # round-trip 3
-        ]
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.register_tool("my_tool", "t", {"type": "object"}, lambda d: "ok")
@@ -443,13 +472,15 @@ class TestTokenUsage:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
 
-        mock_client.messages.create.return_value = _make_text_response(
-            "Hi",
-            input_tokens=100,
-            output_tokens=50,
-            cache_creation_input_tokens=500,
-            cache_read_input_tokens=200,
-        )
+        _setup_stream_responses(mock_client, [
+            _make_text_response(
+                "Hi",
+                input_tokens=100,
+                output_tokens=50,
+                cache_creation_input_tokens=500,
+                cache_read_input_tokens=200,
+            ),
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.chat("msg")
@@ -533,11 +564,13 @@ class TestTokenUsage:
 
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
-        mock_client.messages.create.return_value = _make_tool_use_response(
-            "respond", {"value": "hi"},
-            input_tokens=500, output_tokens=100,
-            cache_read_input_tokens=2000,
-        )
+        _setup_stream_responses(mock_client, [
+            _make_tool_use_response(
+                "respond", {"value": "hi"},
+                input_tokens=500, output_tokens=100,
+                cache_read_input_tokens=2000,
+            ),
+        ])
 
         client = ClaudeClient(api_key="sk-test")
         client.structured_output("Test", Simple)

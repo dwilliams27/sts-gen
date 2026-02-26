@@ -151,7 +151,7 @@ class ClaudeClient:
         model: str = "claude-sonnet-4-20250514",
         system_prompt: str = "",
         max_tokens: int = 4096,
-        temperature: float = 0.0,
+        temperature: float = 1.0,
         api_key: str | None = None,
         max_tool_rounds: int = 20,
     ) -> None:
@@ -284,21 +284,17 @@ class ClaudeClient:
         # Validate via Pydantic
         result = output_schema.model_validate(tool_input)
 
-        # Append assistant message to history so conversation can continue
-        self._messages.append({"role": "assistant", "content": response.content})
-
-        # Append a synthetic tool_result so the API stays happy
-        for block in response.content:
-            if block.type == "tool_use" and block.name == output_tool_name:
-                self._messages.append({
-                    "role": "user",
-                    "content": [{
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": "OK",
-                    }],
-                })
-                break
+        # Store the structured output as a plain-text assistant message
+        # rather than the raw tool_use block.  This prevents the model from
+        # seeing forced tool names (like "submit_concept") in conversation
+        # history and trying to call them during later chat() rounds.
+        self._messages.append({
+            "role": "assistant",
+            "content": (
+                f"[Structured output: {output_schema.__name__}]\n"
+                + json.dumps(tool_input, indent=2)
+            ),
+        })
 
         return result
 
@@ -357,7 +353,9 @@ class ClaudeClient:
         if tool_choice:
             kwargs["tool_choice"] = tool_choice
 
-        response = self._client.messages.create(**kwargs)
+        # Use streaming to avoid SDK timeout errors on large max_tokens
+        with self._client.messages.stream(**kwargs) as stream:
+            response = stream.get_final_message()
 
         # Track usage — all five billing-relevant token buckets
         self._usage.input_tokens += response.usage.input_tokens
@@ -407,10 +405,16 @@ class ClaudeClient:
                         continue
 
                     if block.name not in self._tools:
-                        raise KeyError(
-                            f"Model called unknown tool: {block.name!r}. "
-                            f"Registered tools: {list(self._tools.keys())}"
-                        )
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": (
+                                f"Error: Unknown tool {block.name!r}. "
+                                f"Available tools: {list(self._tools.keys())}"
+                            ),
+                            "is_error": True,
+                        })
+                        continue
 
                     tool_def = self._tools[block.name]
                     try:
