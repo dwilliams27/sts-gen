@@ -1,0 +1,16 @@
+package {{ package_path }}.characters;
+
+import com.evacipated.cardcrawl.modthespire.lib.SpireEnum;
+import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
+
+public class {{ class_name }}Enums {
+    @SpireEnum
+    public static AbstractPlayer.PlayerClass {{ class_name | upper }};
+
+    @SpireEnum(name = "{{ color_name }}")
+    public static AbstractCard.CardColor {{ color_name }};
+
+    @SpireEnum(name = "{{ color_name }}")
+    public static AbstractCard.CardColor CARD_COLOR;
+}

@@ -1,0 +1,163 @@
+package {{ package_path }}.characters;
+
+import basemod.abstracts.CustomPlayer;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.math.MathUtils;
+import com.evacipated.cardcrawl.modthespire.lib.SpireEnum;
+import com.megacrit.cardcrawl.actions.AbstractGameAction;
+import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.core.EnergyManager;
+import com.megacrit.cardcrawl.core.Settings;
+import com.megacrit.cardcrawl.helpers.CardLibrary;
+import com.megacrit.cardcrawl.helpers.FontHelper;
+import com.megacrit.cardcrawl.helpers.ScreenShake;
+import com.megacrit.cardcrawl.localization.CharacterStrings;
+import com.megacrit.cardcrawl.screens.CharSelectInfo;
+import com.megacrit.cardcrawl.unlock.UnlockTracker;
+
+import java.util.ArrayList;
+
+{% for card_class in starter_card_classes %}
+import {{ package_path }}.cards.{{ card_class }};
+{% endfor %}
+import {{ package_path }}.relics.{{ starter_relic_class }};
+
+public class {{ class_name }} extends CustomPlayer {
+    public static final String CHARACTER_ID = "{{ package_path }}.{{ class_name }}";
+    private static final CharacterStrings characterStrings = CardCrawlGame.languagePack.getCharacterString(CHARACTER_ID);
+
+    public static final int ENERGY_PER_TURN = {{ starting_energy }};
+    public static final int STARTING_HP = {{ starting_hp }};
+    public static final int MAX_HP = {{ starting_hp }};
+    public static final int STARTING_GOLD = {{ starting_gold }};
+    public static final int CARD_DRAW = {{ card_draw }};
+
+    public {{ class_name }}(String name, PlayerClass setClass) {
+        super(name, setClass, null, null, null, null);
+
+        this.dialogX = this.drawX + 0.0F * Settings.scale;
+        this.dialogY = this.drawY + 220.0F * Settings.scale;
+
+        initializeClass(
+            null,
+            "{{ package_path | replace('.', '/') }}/img/char/shoulder.png",
+            "{{ package_path | replace('.', '/') }}/img/char/shoulder2.png",
+            "{{ package_path | replace('.', '/') }}/img/char/corpse.png",
+            getLoadout(), 20.0F, -10.0F, 220.0F, 290.0F, new EnergyManager(ENERGY_PER_TURN)
+        );
+    }
+
+    @Override
+    public ArrayList<String> getStartingDeck() {
+        ArrayList<String> retVal = new ArrayList<>();
+{% for card_class in starter_card_classes %}
+        retVal.add({{ card_class }}.ID);
+{% endfor %}
+        return retVal;
+    }
+
+    @Override
+    public ArrayList<String> getStartingRelics() {
+        ArrayList<String> retVal = new ArrayList<>();
+        retVal.add({{ starter_relic_class }}.ID);
+        UnlockTracker.markRelicAsSeen({{ starter_relic_class }}.ID);
+        return retVal;
+    }
+
+    @Override
+    public CharSelectInfo getLoadout() {
+        return new CharSelectInfo(
+            "{{ mod_name }}",
+            characterStrings.TEXT[0],
+            STARTING_HP, MAX_HP, 0, STARTING_GOLD, CARD_DRAW,
+            this, getStartingRelics(), getStartingDeck(), false
+        );
+    }
+
+    @Override
+    public String getTitle(PlayerClass playerClass) {
+        return "{{ mod_name }}";
+    }
+
+    @Override
+    public AbstractCard.CardColor getCardColor() {
+        return {{ class_name }}Enums.{{ class_name | upper }};
+    }
+
+    @Override
+    public Color getCardRenderColor() {
+        return Color.FIREBRICK.cpy();
+    }
+
+    @Override
+    public AbstractCard getStartCardForEvent() {
+{% if starter_card_classes %}
+        return new {{ starter_card_classes[0] }}();
+{% else %}
+        return null;
+{% endif %}
+    }
+
+    @Override
+    public Color getCardTrailColor() {
+        return Color.FIREBRICK.cpy();
+    }
+
+    @Override
+    public int getAscensionMaxHPLoss() {
+        return 4;
+    }
+
+    @Override
+    public BitmapFont getEnergyNumFont() {
+        return FontHelper.energyNumFontRed;
+    }
+
+    @Override
+    public void doCharSelectScreenSelectEffect() {
+        CardCrawlGame.sound.playA("ATTACK_FIRE", MathUtils.random(-0.2F, 0.2F));
+        CardCrawlGame.screenShake.shake(ScreenShake.ShakeIntensity.MED, ScreenShake.ShakeDur.SHORT, false);
+    }
+
+    @Override
+    public String getCustomModeCharacterButtonSoundKey() {
+        return "ATTACK_FIRE";
+    }
+
+    @Override
+    public String getLocalizedCharacterName() {
+        return "{{ mod_name }}";
+    }
+
+    @Override
+    public AbstractPlayer newInstance() {
+        return new {{ class_name }}(this.name, this.chosenClass);
+    }
+
+    @Override
+    public String getSpireHeartText() {
+        return characterStrings.TEXT[1];
+    }
+
+    @Override
+    public Color getSlashAttackColor() {
+        return Color.FIREBRICK.cpy();
+    }
+
+    @Override
+    public AbstractGameAction.AttackEffect[] getSpireHeartSlashEffect() {
+        return new AbstractGameAction.AttackEffect[]{
+            AbstractGameAction.AttackEffect.FIRE,
+            AbstractGameAction.AttackEffect.BLUNT_HEAVY,
+            AbstractGameAction.AttackEffect.FIRE
+        };
+    }
+
+    @Override
+    public String getVampireText() {
+        return "Navigating an event as {{ mod_name }}...";
+    }
+}

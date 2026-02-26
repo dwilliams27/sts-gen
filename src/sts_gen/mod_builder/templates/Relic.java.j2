@@ -1,0 +1,76 @@
+package {{ package_path }}.relics;
+
+import com.megacrit.cardcrawl.actions.AbstractGameAction;
+import com.megacrit.cardcrawl.actions.common.*;
+import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.cards.DamageInfo;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.helpers.ImageMaster;
+import com.megacrit.cardcrawl.localization.RelicStrings;
+import com.megacrit.cardcrawl.monsters.AbstractMonster;
+import com.megacrit.cardcrawl.powers.*;
+import com.megacrit.cardcrawl.relics.AbstractRelic;
+
+public class {{ class_name }} extends AbstractRelic {
+    public static final String ID = "{{ sts_id }}";
+    private static final RelicStrings relicStrings = CardCrawlGame.languagePack.getRelicStrings(ID);
+    public static final String NAME = relicStrings.NAME;
+    public static final String[] DESCRIPTIONS = relicStrings.DESCRIPTIONS;
+    public static final String IMG = "{{ img_path }}";
+    public static final String OUTLINE = "{{ outline_path }}";
+
+    public {{ class_name }}() {
+        super(ID, ImageMaster.loadImage(IMG), ImageMaster.loadImage(OUTLINE), RelicTier.{{ tier }}, LandingSound.CLINK);
+    }
+
+    @Override
+    public String getUpdatedDescription() {
+        return DESCRIPTIONS[0];
+    }
+{% if counter_config %}
+
+    @Override
+    public void {{ trigger_method }}{{ trigger_signature }} {
+{% if counter_config.per_turn and trigger_method != "atTurnStart" %}
+        this.counter++;
+        if (this.counter >= {{ counter_config.threshold }}) {
+            this.counter = 0;
+            this.flash();
+{{ action_body }}
+        }
+{% else %}
+        this.counter++;
+        if (this.counter >= {{ counter_config.threshold }}) {
+            this.counter = 0;
+            this.flash();
+{{ action_body }}
+        }
+{% endif %}
+    }
+{% if counter_config.per_turn %}
+
+    @Override
+    public void atTurnStart() {
+        this.counter = 0;
+    }
+{% endif %}
+
+    @Override
+    public void atBattleStart() {
+        this.counter = 0;
+    }
+{% else %}
+
+    @Override
+    public void {{ trigger_method }}{{ trigger_signature }} {
+        this.flash();
+{{ action_body }}
+    }
+{% endif %}
+
+    @Override
+    public AbstractRelic makeCopy() {
+        return new {{ class_name }}();
+    }
+}

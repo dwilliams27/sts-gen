@@ -1,0 +1,148 @@
+package {{ package_path }}.cards;
+
+import com.megacrit.cardcrawl.actions.AbstractGameAction;
+import com.megacrit.cardcrawl.actions.common.*;
+import com.megacrit.cardcrawl.actions.unique.*;
+import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.cards.DamageInfo;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.localization.CardStrings;
+import com.megacrit.cardcrawl.monsters.AbstractMonster;
+import com.megacrit.cardcrawl.powers.*;
+{% for imp in extra_imports | default([]) %}
+import {{ imp }};
+{% endfor %}
+
+import {{ package_path }}.characters.{{ character_class_name }}Enums;
+
+public class {{ class_name }} extends AbstractCard {
+    public static final String ID = "{{ sts_id }}";
+    private static final CardStrings cardStrings = CardCrawlGame.languagePack.getCardStrings(ID);
+    public static final String NAME = cardStrings.NAME;
+    public static final String DESCRIPTION = cardStrings.DESCRIPTION;
+{% if upgrade and upgrade.action_body %}
+    public static final String UPGRADE_DESCRIPTION = cardStrings.UPGRADE_DESCRIPTION;
+{% endif %}
+    public static final String IMG = "{{ img_path }}";
+
+    private static final CardType TYPE = CardType.{{ card_type }};
+    private static final CardColor COLOR = {{ character_class_name }}Enums.{{ color_name }};
+    private static final CardRarity RARITY = CardRarity.{{ rarity }};
+    private static final CardTarget TARGET = CardTarget.{{ target }};
+
+    private static final int COST = {{ cost }};
+{% if base_damage is not none %}
+    private static final int DAMAGE = {{ base_damage }};
+{% endif %}
+{% if base_block is not none %}
+    private static final int BLOCK = {{ base_block }};
+{% endif %}
+{% if base_magic_number is not none %}
+    private static final int MAGIC = {{ base_magic_number }};
+{% endif %}
+
+    public {{ class_name }}() {
+        super(ID, NAME, IMG, COST, DESCRIPTION, TYPE, COLOR, RARITY, TARGET);
+{% if base_damage is not none %}
+        this.baseDamage = DAMAGE;
+{% endif %}
+{% if base_block is not none %}
+        this.baseBlock = BLOCK;
+{% endif %}
+{% if base_magic_number is not none %}
+        this.baseMagicNumber = MAGIC;
+        this.magicNumber = this.baseMagicNumber;
+{% endif %}
+{% if is_multi_damage %}
+        this.isMultiDamage = true;
+{% endif %}
+{% if exhaust %}
+        this.exhaust = true;
+{% endif %}
+{% if ethereal %}
+        this.isEthereal = true;
+{% endif %}
+{% if innate %}
+        this.isInnate = true;
+{% endif %}
+{% if retain %}
+        this.selfRetain = true;
+{% endif %}
+    }
+
+{% if upgrade and upgrade.action_body %}
+    @Override
+    public void use(AbstractPlayer p, AbstractMonster m) {
+        if (this.upgraded) {
+{{ upgrade.action_body }}
+        } else {
+{{ action_body }}
+        }
+    }
+{% else %}
+    @Override
+    public void use(AbstractPlayer p, AbstractMonster m) {
+{{ action_body }}
+    }
+{% endif %}
+{% if on_exhaust_body %}
+
+    @Override
+    public void triggerOnExhaust() {
+{{ on_exhaust_body }}
+    }
+{% endif %}
+{% if can_use_condition %}
+
+    @Override
+    public boolean canUse(AbstractPlayer p, AbstractMonster m) {
+        boolean canUse = super.canUse(p, m);
+        if (!canUse) return false;
+        return {{ can_use_condition }};
+    }
+{% if play_restriction == "only_attacks_in_hand" %}
+
+    private boolean onlyAttacksInHand() {
+        for (AbstractCard c : AbstractDungeon.player.hand.group) {
+            if (c != this && c.type != CardType.ATTACK) {
+                return false;
+            }
+        }
+        return true;
+    }
+{% endif %}
+{% endif %}
+
+    @Override
+    public void upgrade() {
+        if (!this.upgraded) {
+            this.upgradeName();
+{% if upgrade %}
+{% if upgrade.cost is not none %}
+            this.upgradeBaseCost({{ upgrade.cost }});
+{% endif %}
+{% if upgrade.deltas.get("damage") %}
+            this.upgradeDamage({{ upgrade.deltas["damage"] }});
+{% endif %}
+{% if upgrade.deltas.get("block") %}
+            this.upgradeBlock({{ upgrade.deltas["block"] }});
+{% endif %}
+{% if upgrade.deltas.get("magic_number") %}
+            this.upgradeMagicNumber({{ upgrade.deltas["magic_number"] }});
+{% endif %}
+{% if upgrade.exhaust is not none %}
+            this.exhaust = {{ "true" if upgrade.exhaust else "false" }};
+{% endif %}
+{% if upgrade.innate is not none %}
+            this.isInnate = {{ "true" if upgrade.innate else "false" }};
+{% endif %}
+{% if upgrade.action_body %}
+            this.rawDescription = UPGRADE_DESCRIPTION;
+{% endif %}
+{% endif %}
+            this.initializeDescription();
+        }
+    }
+}

@@ -1,0 +1,112 @@
+package {{ package_path }};
+
+import basemod.BaseMod;
+import basemod.interfaces.*;
+import com.badlogic.gdx.graphics.Color;
+import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
+import com.megacrit.cardcrawl.core.Settings;
+import com.megacrit.cardcrawl.helpers.CardHelper;
+import com.megacrit.cardcrawl.localization.*;
+
+import {{ package_path }}.characters.{{ character_class_name }};
+import {{ package_path }}.characters.{{ character_class_name }}Enums;
+
+{% for cls in card_classes %}
+import {{ package_path }}.cards.{{ cls }};
+{% endfor %}
+{% for cls in relic_classes %}
+import {{ package_path }}.relics.{{ cls }};
+{% endfor %}
+{% for cls in potion_classes %}
+import {{ package_path }}.potions.{{ cls }};
+{% endfor %}
+
+@SpireInitializer
+public class {{ mod_class_name }} implements
+        EditCardsSubscriber,
+        EditRelicsSubscriber,
+        EditStringsSubscriber,
+        EditCharactersSubscriber,
+        EditKeywordsSubscriber,
+        PostInitializeSubscriber {
+
+    private static final Color {{ color_name }}_COLOR = CardHelper.getColor(200, 50, 50);
+
+    public {{ mod_class_name }}() {
+        BaseMod.subscribe(this);
+        BaseMod.addColor(
+            {{ character_class_name }}Enums.{{ color_name }},
+            {{ color_name }}_COLOR, {{ color_name }}_COLOR, {{ color_name }}_COLOR,
+            {{ color_name }}_COLOR, {{ color_name }}_COLOR, {{ color_name }}_COLOR, {{ color_name }}_COLOR,
+            "{{ package_name }}Resources/img/cards/bg_attack.png",
+            "{{ package_name }}Resources/img/cards/bg_skill.png",
+            "{{ package_name }}Resources/img/cards/bg_power.png",
+            "{{ package_name }}Resources/img/cards/card_orb.png",
+            "{{ package_name }}Resources/img/cards/bg_attack_s.png",
+            "{{ package_name }}Resources/img/cards/bg_skill_s.png",
+            "{{ package_name }}Resources/img/cards/bg_power_s.png",
+            "{{ package_name }}Resources/img/cards/card_orb_s.png",
+            "{{ package_name }}Resources/img/cards/energy_orb.png",
+            "{{ package_name }}Resources/img/cards/energy_orb_s.png",
+            "{{ package_name }}Resources/img/cards/energy_orb_portrait.png"
+        );
+    }
+
+    public static void initialize() {
+        new {{ mod_class_name }}();
+    }
+
+    @Override
+    public void receivePostInitialize() {
+{% for cls in potion_classes %}
+        BaseMod.addPotion({{ cls }}.class, null, null, null, {{ cls }}.POTION_ID, {{ character_class_name }}Enums.{{ color_name | upper }});
+{% endfor %}
+    }
+
+    @Override
+    public void receiveEditCharacters() {
+        BaseMod.addCharacter(
+            new {{ character_class_name }}("{{ mod_name }}", {{ character_class_name }}Enums.{{ character_class_name | upper }}),
+            "{{ package_name }}Resources/img/char/button.png",
+            "{{ package_name }}Resources/img/char/portrait.png",
+            {{ character_class_name }}Enums.{{ character_class_name | upper }}
+        );
+    }
+
+    @Override
+    public void receiveEditCards() {
+{% for cls in card_classes %}
+        BaseMod.addCard(new {{ cls }}());
+{% endfor %}
+    }
+
+    @Override
+    public void receiveEditRelics() {
+{% for cls in relic_classes %}
+        BaseMod.addRelicToCustomPool(new {{ cls }}(), {{ character_class_name }}Enums.{{ color_name }});
+{% endfor %}
+    }
+
+    @Override
+    public void receiveEditStrings() {
+        String lang = Settings.language == Settings.GameLanguage.ZHS ? "zhs" : "eng";
+        String basePath = "{{ package_name }}Resources/localization/" + lang + "/";
+
+        BaseMod.loadCustomStringsFile(CardStrings.class, basePath + "cards.json");
+        BaseMod.loadCustomStringsFile(PowerStrings.class, basePath + "powers.json");
+        BaseMod.loadCustomStringsFile(RelicStrings.class, basePath + "relics.json");
+        BaseMod.loadCustomStringsFile(PotionStrings.class, basePath + "potions.json");
+        BaseMod.loadCustomStringsFile(CharacterStrings.class, basePath + "character.json");
+    }
+
+    @Override
+    public void receiveEditKeywords() {
+{% if has_keywords %}
+        // Keywords loaded from localization
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        String keywordJson = com.megacrit.cardcrawl.helpers.Hitbox.class.getResourceAsStream(
+            "/{{ package_name }}Resources/localization/eng/keywords.json"
+        ).toString();
+{% endif %}
+    }
+}
