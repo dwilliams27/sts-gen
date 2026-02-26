@@ -269,6 +269,192 @@ class TestContentSetValidation:
 
 
 # ---------------------------------------------------------------------------
+# ContentSet.prune_unused_statuses
+# ---------------------------------------------------------------------------
+
+class TestPruneUnusedStatuses:
+    """Tests for ContentSet.prune_unused_statuses()."""
+
+    def _make_status(self, id: str, name: str, refs: list[str] | None = None):
+        """Helper: create a StatusEffectDefinition, optionally referencing other statuses."""
+        triggers = {}
+        if refs:
+            triggers[StatusTrigger.ON_TURN_START] = [
+                ActionNode(
+                    action_type=ActionType.APPLY_STATUS,
+                    value=1,
+                    status_name=ref,
+                    target="self",
+                )
+                for ref in refs
+            ]
+        else:
+            triggers[StatusTrigger.ON_TURN_START] = [
+                ActionNode(action_type=ActionType.GAIN_BLOCK, value=3, target="self"),
+            ]
+        return StatusEffectDefinition(
+            id=id,
+            name=name,
+            description=f"{name} status",
+            is_debuff=False,
+            stack_behavior=StackBehavior.INTENSITY,
+            triggers=triggers,
+        )
+
+    def _make_card_with_status(self, card_id: str, status_name: str):
+        return CardDefinition(
+            id=card_id,
+            name=card_id,
+            type=CardType.POWER,
+            rarity=CardRarity.COMMON,
+            cost=1,
+            target=CardTarget.SELF,
+            description="Test",
+            actions=[
+                ActionNode(
+                    action_type=ActionType.APPLY_STATUS,
+                    value=1,
+                    status_name=status_name,
+                    target="self",
+                ),
+            ],
+        )
+
+    def test_no_pruning_when_all_used(self):
+        status = self._make_status("mod:A", "A")
+        card = self._make_card_with_status("c1", "mod:A")
+        cs = ContentSet(mod_id="t", mod_name="T", cards=[card], status_effects=[status])
+
+        pruned = cs.prune_unused_statuses()
+        assert len(pruned.status_effects) == 1
+        assert pruned is cs  # same object, no copy needed
+
+    def test_dead_status_removed(self):
+        used = self._make_status("mod:A", "A")
+        dead = self._make_status("mod:B", "B")
+        card = self._make_card_with_status("c1", "mod:A")
+        cs = ContentSet(
+            mod_id="t", mod_name="T",
+            cards=[card], status_effects=[used, dead],
+        )
+
+        pruned = cs.prune_unused_statuses()
+        assert len(pruned.status_effects) == 1
+        assert pruned.status_effects[0].id == "mod:A"
+
+    def test_transitive_ref_kept(self):
+        """Status A → Status B in triggers; both should survive."""
+        a = self._make_status("mod:A", "A", refs=["mod:B"])
+        b = self._make_status("mod:B", "B")
+        dead = self._make_status("mod:C", "C")
+        card = self._make_card_with_status("c1", "mod:A")
+        cs = ContentSet(
+            mod_id="t", mod_name="T",
+            cards=[card], status_effects=[a, b, dead],
+        )
+
+        pruned = cs.prune_unused_statuses()
+        kept_ids = {s.id for s in pruned.status_effects}
+        assert kept_ids == {"mod:A", "mod:B"}
+
+    def test_mutual_dead_chain_pruned(self):
+        """Dead D → Dead E: neither is reachable from cards, both pruned."""
+        d = self._make_status("mod:D", "D", refs=["mod:E"])
+        e = self._make_status("mod:E", "E")
+        used = self._make_status("mod:A", "A")
+        card = self._make_card_with_status("c1", "mod:A")
+        cs = ContentSet(
+            mod_id="t", mod_name="T",
+            cards=[card], status_effects=[used, d, e],
+        )
+
+        pruned = cs.prune_unused_statuses()
+        kept_ids = {s.id for s in pruned.status_effects}
+        assert kept_ids == {"mod:A"}
+
+    def test_ref_by_name_keeps_status(self):
+        """Cards can reference statuses by name (not just id)."""
+        status = self._make_status("mod:Fire", "Fire")
+        card = self._make_card_with_status("c1", "Fire")  # name, not id
+        cs = ContentSet(
+            mod_id="t", mod_name="T",
+            cards=[card], status_effects=[status],
+        )
+
+        pruned = cs.prune_unused_statuses()
+        assert len(pruned.status_effects) == 1
+
+    def test_upgrade_actions_count_as_refs(self):
+        """Status referenced only in upgrade actions should be kept."""
+        status = self._make_status("mod:X", "X")
+        card = CardDefinition(
+            id="c1", name="c1", type=CardType.POWER, rarity=CardRarity.COMMON,
+            cost=1, target=CardTarget.SELF, description="Test",
+            actions=[ActionNode(action_type=ActionType.GAIN_BLOCK, value=5, target="self")],
+            upgrade=UpgradeDefinition(
+                actions=[ActionNode(
+                    action_type=ActionType.APPLY_STATUS, value=2,
+                    status_name="mod:X", target="self",
+                )],
+            ),
+        )
+        cs = ContentSet(
+            mod_id="t", mod_name="T",
+            cards=[card], status_effects=[status],
+        )
+
+        pruned = cs.prune_unused_statuses()
+        assert len(pruned.status_effects) == 1
+
+    def test_relic_refs_count(self):
+        """Status referenced by a relic should be kept."""
+        from sts_gen.ir.relics import RelicDefinition, RelicTier
+
+        status = self._make_status("mod:R", "R")
+        relic = RelicDefinition(
+            id="mod:relic", name="Test Relic", tier=RelicTier.COMMON,
+            description="Test", trigger="on_combat_start",
+            actions=[ActionNode(
+                action_type=ActionType.APPLY_STATUS, value=1,
+                status_name="mod:R", target="self",
+            )],
+        )
+        cs = ContentSet(
+            mod_id="t", mod_name="T",
+            relics=[relic], status_effects=[status],
+        )
+
+        pruned = cs.prune_unused_statuses()
+        assert len(pruned.status_effects) == 1
+
+    def test_potion_refs_count(self):
+        """Status referenced by a potion should be kept."""
+        from sts_gen.ir.potions import PotionDefinition, PotionRarity
+
+        status = self._make_status("mod:P", "P")
+        potion = PotionDefinition(
+            id="mod:pot", name="Test Potion", rarity=PotionRarity.COMMON,
+            description="Test", target=CardTarget.SELF,
+            actions=[ActionNode(
+                action_type=ActionType.APPLY_STATUS, value=1,
+                status_name="mod:P", target="self",
+            )],
+        )
+        cs = ContentSet(
+            mod_id="t", mod_name="T",
+            potions=[potion], status_effects=[status],
+        )
+
+        pruned = cs.prune_unused_statuses()
+        assert len(pruned.status_effects) == 1
+
+    def test_empty_statuses_noop(self):
+        cs = ContentSet(mod_id="t", mod_name="T")
+        pruned = cs.prune_unused_statuses()
+        assert pruned is cs
+
+
+# ---------------------------------------------------------------------------
 # CardDefinition with upgrade
 # ---------------------------------------------------------------------------
 

@@ -148,6 +148,54 @@ class ContentSet(BaseModel):
                 return status
         return None
 
+    # -- pruning ------------------------------------------------------------
+
+    def prune_unused_statuses(self) -> "ContentSet":
+        """Return a copy with unreferenced status effects removed.
+
+        Collects every ``status_name`` referenced from cards, relics, and
+        potions, then transitively follows references inside status-effect
+        triggers to find the full reachable set.  Any status whose id *and*
+        name are both outside that set is dropped.
+        """
+        # 1. Direct refs from cards, relics, potions (the "roots").
+        root_refs: set[str] = set()
+        for card in self.cards:
+            root_refs.update(_collect_status_refs(card.actions))
+            if card.upgrade and card.upgrade.actions:
+                root_refs.update(_collect_status_refs(card.upgrade.actions))
+        for relic in self.relics:
+            root_refs.update(_collect_status_refs(relic.actions))
+        for potion in self.potions:
+            root_refs.update(_collect_status_refs(potion.actions))
+
+        # 2. Build lookup: id-or-name → StatusEffectDefinition
+        by_key: dict[str, StatusEffectDefinition] = {}
+        for s in self.status_effects:
+            by_key[s.id] = s
+            by_key[s.name] = s
+
+        # 3. Transitive closure: follow trigger refs from reachable statuses.
+        reachable: set[str] = set()  # ids of kept statuses
+        frontier = set(root_refs)
+        while frontier:
+            ref = frontier.pop()
+            status = by_key.get(ref)
+            if status is None or status.id in reachable:
+                continue
+            reachable.add(status.id)
+            # Add refs from this status's triggers
+            for trigger_actions in status.triggers.values():
+                for child_ref in _collect_status_refs(trigger_actions):
+                    if child_ref not in reachable:
+                        frontier.add(child_ref)
+
+        kept = [s for s in self.status_effects if s.id in reachable]
+        if len(kept) == len(self.status_effects):
+            return self
+
+        return self.model_copy(update={"status_effects": kept})
+
     # -- validation ---------------------------------------------------------
 
     @model_validator(mode="after")

@@ -275,7 +275,7 @@ class DesignerAgent:
                     keywords=keywords.keywords,
                     status_effects=keywords.status_effects,
                 )
-                return content_set
+                return content_set.prune_unused_statuses()
             except (ValidationError, ValueError) as exc:
                 if attempt == self._max_retries - 1:
                     raise
