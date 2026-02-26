@@ -311,9 +311,10 @@ class ContentRegistry:
     def load_content_set(self, content_set: ContentSet) -> None:
         """Load custom content from a :class:`ContentSet` IR.
 
-        Cards from the content set are added to the registry alongside
-        vanilla cards.  If a custom card has the same ``id`` as a vanilla
-        card, the custom version takes precedence.
+        All content types (cards, relics, potions, status effects) from the
+        content set are added to the registry alongside vanilla content.
+        If a custom item has the same ``id`` as a vanilla item, the custom
+        version takes precedence.
 
         Parameters
         ----------
@@ -322,6 +323,12 @@ class ContentRegistry:
         """
         for card in content_set.cards:
             self.cards[card.id] = card
+        for relic in content_set.relics:
+            self.relics[relic.id] = relic
+        for potion in content_set.potions:
+            self.potions[potion.id] = potion
+        for status in content_set.status_effects:
+            self.status_defs[status.id] = status
 
     # ------------------------------------------------------------------
     # Card queries
