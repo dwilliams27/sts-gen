@@ -319,6 +319,51 @@ class TestControlFlow:
         result = transpiler.transpile([node], card_ctx)
         assert "p.currentBlock == 0" in result
 
+    def test_target_is_dead_deferred(self, transpiler, card_ctx):
+        """target_is_dead should generate a deferred AbstractGameAction."""
+        node = ActionNode(
+            action_type=ActionType.CONDITIONAL,
+            condition="target_is_dead",
+            children=[
+                ActionNode(action_type=ActionType.GAIN_ENERGY, value=1),
+            ],
+        )
+        result = transpiler.transpile([node], card_ctx)
+        assert "AbstractGameAction()" in result
+        assert "public void update()" in result
+        assert "isDeadOrEscaped" in result
+        assert "this.isDone = true" in result
+        # Child actions inside deferred block use addToTop
+        assert "addToTop(" in result
+
+    def test_target_is_dead_not_plain_if(self, transpiler, card_ctx):
+        """target_is_dead should NOT generate a plain synchronous if block."""
+        node = ActionNode(
+            action_type=ActionType.CONDITIONAL,
+            condition="target_is_dead",
+            children=[
+                ActionNode(action_type=ActionType.DRAW_CARDS, value=1),
+            ],
+        )
+        result = transpiler.transpile([node], card_ctx)
+        # Should not have a plain if block (the if is inside the action)
+        lines = result.strip().split("\n")
+        first_line = lines[0].strip()
+        assert first_line.startswith("addToBot(new AbstractGameAction()")
+
+    def test_has_status_still_synchronous(self, transpiler, card_ctx):
+        """has_status should still generate a plain synchronous if block."""
+        node = ActionNode(
+            action_type=ActionType.CONDITIONAL,
+            condition="has_status:Vulnerable",
+            children=[
+                ActionNode(action_type=ActionType.DRAW_CARDS, value=1),
+            ],
+        )
+        result = transpiler.transpile([node], card_ctx)
+        assert "if (p.hasPower" in result
+        assert "AbstractGameAction()" not in result
+
     def test_conditional_hp_below(self, transpiler, card_ctx):
         node = ActionNode(
             action_type=ActionType.CONDITIONAL,

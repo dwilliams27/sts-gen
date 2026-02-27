@@ -185,6 +185,99 @@ id, name, description
 }
 ```
 
+**Deal damage to all enemies at start of turn (status effect):**
+```json
+{
+  "id": "my_mod:BurningAura", "name": "Burning Aura",
+  "description": "At the start of your turn, deal damage to ALL enemies equal to stacks.",
+  "is_debuff": false, "stack_behavior": "INTENSITY",
+  "triggers": {
+    "ON_TURN_START": [
+      {"action_type": "deal_damage", "value": 1, "target": "all_enemies", "condition": "per_stack_no_strength"}
+    ]
+  }
+}
+```
+
+**Gain block when attacked (status effect):**
+```json
+{
+  "id": "my_mod:SpiritShield", "name": "Spirit Shield",
+  "description": "When you are attacked, gain Block equal to stacks.",
+  "is_debuff": false, "stack_behavior": "INTENSITY",
+  "triggers": {
+    "ON_ATTACKED": [
+      {"action_type": "gain_block", "value": 1, "target": "self", "condition": "per_stack_raw"}
+    ]
+  }
+}
+```
+
+**Convert HP to energy (card):**
+```json
+{"actions": [
+  {"action_type": "lose_hp", "value": 5, "target": "self"},
+  {"action_type": "gain_energy", "value": 2}
+]}
+```
+
+**Conditional on kill (deal damage, then check if dead):**
+```json
+{"actions": [
+  {"action_type": "deal_damage", "value": 10, "target": "enemy"},
+  {"action_type": "conditional", "condition": "target_is_dead", "children": [
+    {"action_type": "gain_energy", "value": 1}
+  ]}
+]}
+```
+
+**X-cost: repeat effect X times:**
+```json
+{
+  "cost": -1, "actions": [
+    {"action_type": "repeat", "condition": "times_from_x_cost", "children": [
+      {"action_type": "gain_block", "value": 5, "target": "self"}
+    ]}
+  ]
+}
+```
+
+**Damage scaling with status stacks (use a custom status trigger):**
+```json
+{
+  "id": "my_mod:SoulFire", "name": "Soul Fire",
+  "description": "Whenever you play an Attack, deal damage equal to stacks to a random enemy.",
+  "is_debuff": false, "stack_behavior": "INTENSITY",
+  "triggers": {
+    "ON_ATTACK_PLAYED": [
+      {"action_type": "deal_damage", "value": 1, "target": "enemy", "condition": "per_stack_no_strength"}
+    ]
+  }
+}
+```
+
+---
+
+## CRITICAL: Do NOT use trigger_custom
+
+`trigger_custom` is reserved for Ironclad-specific mechanics (Armaments, Exhume, etc.). For your custom character, **every card effect MUST be expressed using the other 22 action types**. Cards containing `trigger_custom` will be **REJECTED by validation** and the entire content set will fail.
+
+If you think you need `trigger_custom`, redesign the effect using existing primitives:
+
+| What you want | How to express it |
+|---|---|
+| Deal damage equal to X stacks | `deal_damage` with `value=1` inside a status trigger with `per_stack` |
+| Thorns-like reflect damage | `apply_status` with Thorns (vanilla) or custom status with `ON_ATTACKED` trigger |
+| Do X based on missing HP | `conditional` with `hp_below:N` + fixed-value action |
+| Effect on kill | `conditional` with `target_is_dead` after `deal_damage` |
+| Convert HP to energy | `lose_hp` + `gain_energy` as separate actions |
+| Repeat X times based on energy | `repeat` with `times_from_x_cost` condition |
+| Minions/summons | **DO NOT design minion mechanics.** Use status effects instead |
+| Scale damage with exhausted cards | `deal_damage` with `plus_per_exhaust:N` condition |
+| Start-of-turn effect | Custom status with `ON_TURN_START` trigger |
+| When attacked, gain block | Custom status with `ON_ATTACKED` trigger |
+| When card is played, do X | Custom status with `ON_CARD_PLAYED` trigger |
+
 ---
 
 ## Vanilla Examples

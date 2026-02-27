@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
+
 from pydantic import BaseModel, model_validator
 
-from .actions import ActionNode
+from .actions import ActionNode, ActionType
 from .cards import CardDefinition
 from .keywords import KeywordDefinition
 from .potions import PotionDefinition
@@ -105,6 +107,152 @@ def _collect_status_refs(actions: list[ActionNode]) -> set[str]:
         if node.children:
             refs.update(_collect_status_refs(node.children))
     return refs
+
+
+# ---------------------------------------------------------------------------
+# Transpilability: known-valid conditions per ActionType
+# ---------------------------------------------------------------------------
+
+# Literal conditions (exact match)
+_VALID_CONDITIONS: dict[ActionType, set[str]] = {
+    ActionType.DEAL_DAMAGE: {
+        "no_strength",
+        "use_block_as_damage",
+        "times_from_x_cost",
+        # Power trigger contexts:
+        "per_stack",
+        "per_stack_no_strength",
+    },
+    ActionType.GAIN_BLOCK: {
+        "raw",
+        "per_non_attack_in_hand",
+        "per_stack",
+        "per_stack_raw",
+    },
+    ActionType.HEAL: {"heal_from_last_damage", "raise_max_hp"},
+    ActionType.EXHAUST_CARDS: {"non_attack", "random"},
+    ActionType.FOR_EACH: {"enemy", "card_in_hand"},
+    ActionType.REPEAT: {"times_from_x_cost"},
+    ActionType.LOSE_HP: {"per_stack"},
+    ActionType.GAIN_ENERGY: {"per_stack"},
+    ActionType.GAIN_STRENGTH: {"per_stack"},
+    ActionType.GAIN_DEXTERITY: {"per_stack"},
+    ActionType.DRAW_CARDS: {"per_stack"},
+}
+
+# Regex patterns for parameterised conditions (e.g. ``has_status:Foo``)
+_VALID_CONDITION_PATTERNS: dict[ActionType, list[re.Pattern[str]]] = {
+    ActionType.DEAL_DAMAGE: [
+        re.compile(r"^plus_per_exhaust:\d+$"),
+        re.compile(r"^strength_multiplier_\d+$"),
+        re.compile(r"^plus_per_strike_\d+$"),
+        re.compile(r"^plus_rampage_scaling:\d+$"),
+        re.compile(r"^searing_blow_scaling$"),
+    ],
+    ActionType.CONDITIONAL: [
+        re.compile(r"^has_status:.+$"),
+        re.compile(r"^target_has_status:.+$"),
+        re.compile(r"^hp_below:\d+$"),
+        re.compile(r"^hp_above:\d+$"),
+        re.compile(r"^no_block$"),
+        re.compile(r"^hand_empty$"),
+        re.compile(r"^hand_size_gte:\d+$"),
+        re.compile(r"^only_attacks_in_hand$"),
+        re.compile(r"^enemy_intends_attack$"),
+        re.compile(r"^target_is_dead$"),
+        re.compile(r"^turn_eq:\d+$"),
+    ],
+}
+
+# ActionTypes that accept conditions (via literals or patterns above).
+_CONDITIONED_TYPES = set(_VALID_CONDITIONS.keys()) | set(
+    _VALID_CONDITION_PATTERNS.keys()
+)
+
+# Ironclad-only trigger_custom patterns — matched with re.match for prefix:N forms
+_IRONCLAD_TRIGGER_CUSTOM_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r"^exhume$"),
+    re.compile(r"^armaments$"),
+    re.compile(r"^armaments_all$"),
+    re.compile(r"^dual_wield(:\d+)?$"),
+    re.compile(r"^infernal_blade$"),
+    re.compile(r"^increment_rampage(:\d+)?$"),
+]
+
+# Required fields per action type
+_REQUIRED_FIELDS: dict[ActionType, list[str]] = {
+    ActionType.APPLY_STATUS: ["status_name"],
+    ActionType.REMOVE_STATUS: ["status_name"],
+    ActionType.MULTIPLY_STATUS: ["status_name"],
+}
+
+
+def _is_valid_condition(action_type: ActionType, condition: str) -> bool:
+    """Return True if *condition* is known-valid for *action_type*."""
+    literals = _VALID_CONDITIONS.get(action_type, set())
+    if condition in literals:
+        return True
+    patterns = _VALID_CONDITION_PATTERNS.get(action_type, [])
+    return any(p.match(condition) for p in patterns)
+
+
+def _walk_action_errors(
+    actions: list[ActionNode],
+    *,
+    source_label: str,
+    allow_trigger_custom: bool = False,
+) -> list[str]:
+    """Recursively validate an action tree for transpilability.
+
+    Returns a list of human-readable error strings (empty = valid).
+    """
+    errors: list[str] = []
+    for node in actions:
+        # 1. Reject trigger_custom (unless whitelisted for Ironclad)
+        if node.action_type == ActionType.TRIGGER_CUSTOM:
+            cond = node.condition or ""
+            is_ironclad = any(
+                p.match(cond) for p in _IRONCLAD_TRIGGER_CUSTOM_PATTERNS
+            )
+            if allow_trigger_custom and is_ironclad:
+                pass  # Ironclad-specific, allowed
+            else:
+                errors.append(
+                    f"{source_label}: trigger_custom is not allowed "
+                    f"(condition={cond!r}). Use existing IR primitives instead."
+                )
+
+        # 2. Unknown conditions
+        if node.condition is not None and node.action_type != ActionType.TRIGGER_CUSTOM:
+            if node.action_type not in _CONDITIONED_TYPES:
+                errors.append(
+                    f"{source_label}: {node.action_type.value} does not "
+                    f"accept conditions (got {node.condition!r})."
+                )
+            elif not _is_valid_condition(node.action_type, node.condition):
+                errors.append(
+                    f"{source_label}: unknown condition {node.condition!r} "
+                    f"for {node.action_type.value}."
+                )
+
+        # 3. Missing required fields
+        for field in _REQUIRED_FIELDS.get(node.action_type, []):
+            if getattr(node, field, None) is None:
+                errors.append(
+                    f"{source_label}: {node.action_type.value} requires "
+                    f"'{field}' but it is missing."
+                )
+
+        # Recurse into children
+        if node.children:
+            errors.extend(
+                _walk_action_errors(
+                    node.children,
+                    source_label=source_label,
+                    allow_trigger_custom=allow_trigger_custom,
+                )
+            )
+    return errors
 
 
 class ContentSet(BaseModel):
@@ -233,6 +381,68 @@ class ContentSet(BaseModel):
                 f"Unknown status effect(s) referenced in actions: "
                 f"{', '.join(sorted(unknown))}. "
                 f"Define them in status_effects or use a vanilla status name."
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def _validate_transpilability(self) -> "ContentSet":
+        """Ensure all action trees are transpilable to Java.
+
+        Rejects:
+        - ``trigger_custom`` actions (reserved for Ironclad-specific mechanics)
+        - Unknown/unsupported conditions for a given action type
+        - Missing required fields (e.g. ``status_name`` on ``apply_status``)
+        """
+        errors: list[str] = []
+
+        for card in self.cards:
+            label = f"card '{card.id}'"
+            errors.extend(
+                _walk_action_errors(card.actions, source_label=label)
+            )
+            if card.upgrade and card.upgrade.actions:
+                errors.extend(
+                    _walk_action_errors(
+                        card.upgrade.actions,
+                        source_label=f"{label} (upgrade)",
+                    )
+                )
+            if card.on_exhaust:
+                errors.extend(
+                    _walk_action_errors(
+                        card.on_exhaust,
+                        source_label=f"{label} (on_exhaust)",
+                    )
+                )
+
+        for relic in self.relics:
+            errors.extend(
+                _walk_action_errors(
+                    relic.actions, source_label=f"relic '{relic.id}'"
+                )
+            )
+
+        for potion in self.potions:
+            errors.extend(
+                _walk_action_errors(
+                    potion.actions, source_label=f"potion '{potion.id}'"
+                )
+            )
+
+        for status in self.status_effects:
+            for trigger, trigger_actions in status.triggers.items():
+                errors.extend(
+                    _walk_action_errors(
+                        trigger_actions,
+                        source_label=f"status '{status.id}' trigger {trigger}",
+                    )
+                )
+
+        if errors:
+            raise ValueError(
+                f"Transpilability validation failed with {len(errors)} error(s):\n"
+                + "\n".join(f"  - {e}" for e in errors)
             )
 
         return self

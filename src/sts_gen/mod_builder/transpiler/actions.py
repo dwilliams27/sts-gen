@@ -504,18 +504,56 @@ class ActionTranspiler:
 
     # -- Handlers: Control Flow ----------------------------------------------
 
+    # Conditions that must be evaluated after preceding queued actions resolve.
+    # These are wrapped in an inline AbstractGameAction so the check runs at
+    # execution time rather than synchronously at card-play time.
+    _DEFERRED_CONDITIONS: set[str] = {"target_is_dead"}
+
     def _handle_conditional(
         self, node: ActionNode, ctx: TranspileContext
     ) -> str:
         ind = ctx.indent_str()
         condition = node.condition or "true"
-        java_cond = self._condition_to_java(condition, ctx)
         children = node.children or []
 
+        if condition in self._DEFERRED_CONDITIONS:
+            return self._handle_deferred_conditional(node, ctx)
+
+        java_cond = self._condition_to_java(condition, ctx)
         inner_ctx = ctx.indented()
         body = self.transpile(children, inner_ctx)
 
         return f"{ind}if ({java_cond}) {{\n{body}\n{ind}}}"
+
+    def _handle_deferred_conditional(
+        self, node: ActionNode, ctx: TranspileContext
+    ) -> str:
+        """Emit an inline AbstractGameAction that evaluates the condition at
+        execution time.  Child actions use ``addToTop`` so they execute
+        immediately after the check rather than at the end of the queue.
+        """
+        ind = ctx.indent_str()
+        condition = node.condition or "true"
+        java_cond = self._condition_to_java(condition, ctx)
+        children = node.children or []
+
+        # Children inside deferred block use addToTop and deeper indent
+        deferred_ctx = ctx.indented(extra=3)
+        # Swap addToBot → addToTop in the body
+        body = self.transpile(children, deferred_ctx)
+        body = body.replace("addToBot(", "addToTop(")
+
+        return (
+            f"{ind}addToBot(new AbstractGameAction() {{\n"
+            f"{ind}    @Override\n"
+            f"{ind}    public void update() {{\n"
+            f"{ind}        if ({java_cond}) {{\n"
+            f"{body}\n"
+            f"{ind}        }}\n"
+            f"{ind}        this.isDone = true;\n"
+            f"{ind}    }}\n"
+            f"{ind}}});"
+        )
 
     def _handle_for_each(
         self, node: ActionNode, ctx: TranspileContext

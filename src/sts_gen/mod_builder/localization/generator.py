@@ -15,6 +15,7 @@ from sts_gen.ir.potions import PotionDefinition
 from sts_gen.ir.relics import RelicDefinition
 from sts_gen.ir.status_effects import StatusEffectDefinition
 
+from ..transpiler.cards import _extract_stats
 from ..transpiler.naming import to_sts_id
 
 
@@ -104,14 +105,31 @@ class LocalizationGenerator:
     ) -> str:
         """Format card description with STS dynamic placeholders.
 
-        Replaces numeric values with !D! (damage), !B! (block), !M! (magic).
+        Cross-references the card's extracted stats (baseDamage, baseBlock,
+        baseMagicNumber) against numeric values in the description text and
+        replaces the first occurrence of each with !D!, !B!, !M! respectively.
         """
         desc = card.description
         if upgraded and card.upgrade and card.upgrade.description:
             desc = card.upgrade.description
 
-        # STS uses !D! for damage, !B! for block, !M! for magic number
-        # The descriptions from the IR typically already have the numbers
-        # We can leave them as-is since STS will override with computed values
-        # if the card has baseDamage/baseBlock/baseMagicNumber set
+        # Determine which action tree to extract stats from
+        actions = card.actions
+        if upgraded and card.upgrade and card.upgrade.actions:
+            actions = card.upgrade.actions
+
+        stats = _extract_stats(actions, card.target)
+
+        # Replace first occurrence of each stat value with STS placeholder.
+        # Order matters: replace damage first, then block, then magic number,
+        # to avoid collisions when multiple stats share the same value.
+        if stats.base_damage is not None:
+            desc = desc.replace(str(stats.base_damage), "!D!", 1)
+        if stats.base_block is not None:
+            desc = desc.replace(str(stats.base_block), "!B!", 1)
+        if stats.base_magic_number is not None:
+            desc = desc.replace(str(stats.base_magic_number), "!M!", 1)
+
+        # STS newlines
+        desc = desc.replace("\n", " NL ")
         return desc
