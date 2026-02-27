@@ -12,7 +12,8 @@ from sts_gen.ir.actions import ActionNode, ActionType
 from sts_gen.ir.cards import CardDefinition, CardTarget, CardType
 
 from .actions import ActionTranspiler, TranspileContext
-from .naming import to_card_class_name, to_image_path, to_sts_id
+from .naming import to_card_class_name, to_image_path, to_power_class_name, to_sts_id
+from .vanilla_powers import is_vanilla_status
 
 
 @dataclass
@@ -59,6 +60,22 @@ def _extract_stats(actions: list[ActionNode], target: CardTarget) -> CardStats:
 
     walk(actions)
     return stats
+
+
+def _collect_custom_power_refs(actions: list[ActionNode]) -> set[str]:
+    """Walk action tree and collect all custom (non-vanilla) status names referenced."""
+    refs: set[str] = set()
+
+    def walk(nodes: list[ActionNode]) -> None:
+        for node in nodes:
+            if node.action_type == ActionType.APPLY_STATUS and node.status_name:
+                if not is_vanilla_status(node.status_name):
+                    refs.add(node.status_name)
+            if node.children:
+                walk(node.children)
+
+    walk(actions)
+    return refs
 
 
 def _compute_upgrade_deltas(
@@ -122,10 +139,10 @@ class CardTranspiler:
             "SPECIAL": "SPECIAL",
         }
 
-        # Card target → STS enum
+        # Card target → STS enum (STS uses ALL_ENEMY, not ALL_ENEMIES)
         target_map = {
             CardTarget.ENEMY: "ENEMY",
-            CardTarget.ALL_ENEMIES: "ALL_ENEMIES",
+            CardTarget.ALL_ENEMIES: "ALL_ENEMY",
             CardTarget.SELF: "SELF",
             CardTarget.NONE: "NONE",
         }
@@ -175,6 +192,18 @@ class CardTranspiler:
                 card.play_restriction, ctx
             )
 
+        # Collect custom power imports (non-vanilla status refs need import)
+        all_actions = list(card.actions)
+        if card.upgrade and card.upgrade.actions:
+            all_actions.extend(card.upgrade.actions)
+        if card.on_exhaust:
+            all_actions.extend(card.on_exhaust)
+        custom_refs = _collect_custom_power_refs(all_actions)
+        pkg = f"sts_gen.{self.mod_id.lower()}"
+        extra_imports = [
+            f"{pkg}.powers.{to_power_class_name(ref)}" for ref in sorted(custom_refs)
+        ]
+
         return {
             "class_name": class_name,
             "sts_id": sts_id,
@@ -196,5 +225,6 @@ class CardTranspiler:
             "on_exhaust_body": on_exhaust_body,
             "can_use_condition": can_use_condition,
             "is_x_cost": card.cost == -1,
-            "package_path": f"sts_gen.{self.mod_id.lower()}",
+            "package_path": pkg,
+            "extra_imports": extra_imports,
         }

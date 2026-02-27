@@ -36,19 +36,22 @@ public class {{ mod_class_name }} implements
         BaseMod.subscribe(this);
         BaseMod.addColor(
             {{ character_class_name }}Enums.{{ color_name }},
-            {{ color_name }}_COLOR, {{ color_name }}_COLOR, {{ color_name }}_COLOR,
-            {{ color_name }}_COLOR, {{ color_name }}_COLOR, {{ color_name }}_COLOR, {{ color_name }}_COLOR,
+            {{ color_name }}_COLOR,
+            {{ color_name }}_COLOR,
+            {{ color_name }}_COLOR,
+            {{ color_name }}_COLOR,
+            {{ color_name }}_COLOR,
+            {{ color_name }}_COLOR,
+            {{ color_name }}_COLOR,
             "{{ package_name }}Resources/img/cards/bg_attack.png",
             "{{ package_name }}Resources/img/cards/bg_skill.png",
             "{{ package_name }}Resources/img/cards/bg_power.png",
-            "{{ package_name }}Resources/img/cards/card_orb.png",
+            "{{ package_name }}Resources/img/cards/energy_orb.png",
             "{{ package_name }}Resources/img/cards/bg_attack_s.png",
             "{{ package_name }}Resources/img/cards/bg_skill_s.png",
             "{{ package_name }}Resources/img/cards/bg_power_s.png",
-            "{{ package_name }}Resources/img/cards/card_orb_s.png",
-            "{{ package_name }}Resources/img/cards/energy_orb.png",
-            "{{ package_name }}Resources/img/cards/energy_orb_s.png",
-            "{{ package_name }}Resources/img/cards/energy_orb_portrait.png"
+            "{{ package_name }}Resources/img/cards/energy_orb_portrait.png",
+            "{{ package_name }}Resources/img/cards/card_orb.png"
         );
     }
 
@@ -59,17 +62,17 @@ public class {{ mod_class_name }} implements
     @Override
     public void receivePostInitialize() {
 {% for cls in potion_classes %}
-        BaseMod.addPotion({{ cls }}.class, null, null, null, {{ cls }}.POTION_ID, {{ character_class_name }}Enums.{{ color_name | upper }});
+        BaseMod.addPotion({{ cls }}.class, null, null, null, {{ cls }}.POTION_ID, {{ character_class_name }}Enums.{{ character_class_name | upper }}_CLASS);
 {% endfor %}
     }
 
     @Override
     public void receiveEditCharacters() {
         BaseMod.addCharacter(
-            new {{ character_class_name }}("{{ mod_name }}", {{ character_class_name }}Enums.{{ character_class_name | upper }}),
+            new {{ character_class_name }}("{{ mod_name }}", {{ character_class_name }}Enums.{{ character_class_name | upper }}_CLASS),
             "{{ package_name }}Resources/img/char/button.png",
             "{{ package_name }}Resources/img/char/portrait.png",
-            {{ character_class_name }}Enums.{{ character_class_name | upper }}
+            {{ character_class_name }}Enums.{{ character_class_name | upper }}_CLASS
         );
     }
 
@@ -101,12 +104,6 @@ public class {{ mod_class_name }} implements
 
     @Override
     public void receiveEditKeywords() {
-{% if has_keywords %}
-        // Keywords loaded from localization
-        com.google.gson.Gson gson = new com.google.gson.Gson();
-        String keywordJson = com.megacrit.cardcrawl.helpers.Hitbox.class.getResourceAsStream(
-            "/{{ package_name }}Resources/localization/eng/keywords.json"
-        ).toString();
-{% endif %}
+        // Keywords not yet implemented
     }
 }

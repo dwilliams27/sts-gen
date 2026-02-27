@@ -11,17 +11,20 @@ import com.megacrit.cardcrawl.localization.RelicStrings;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.powers.*;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
+import basemod.abstracts.CustomRelic;
+{% for imp in extra_imports | default([]) %}
+import {{ imp }};
+{% endfor %}
 
-public class {{ class_name }} extends AbstractRelic {
+public class {{ class_name }} extends CustomRelic {
     public static final String ID = "{{ sts_id }}";
     private static final RelicStrings relicStrings = CardCrawlGame.languagePack.getRelicStrings(ID);
     public static final String NAME = relicStrings.NAME;
     public static final String[] DESCRIPTIONS = relicStrings.DESCRIPTIONS;
     public static final String IMG = "{{ img_path }}";
-    public static final String OUTLINE = "{{ outline_path }}";
 
     public {{ class_name }}() {
-        super(ID, ImageMaster.loadImage(IMG), ImageMaster.loadImage(OUTLINE), RelicTier.{{ tier }}, LandingSound.CLINK);
+        super(ID, ImageMaster.loadImage(IMG), RelicTier.{{ tier }}, LandingSound.CLINK);
     }
 
     @Override

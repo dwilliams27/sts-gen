@@ -126,3 +126,25 @@ def get_vanilla_power_id(status_name: str) -> str | None:
 def is_vanilla_status(status_name: str) -> bool:
     """Check if a status name is a known vanilla status."""
     return status_name in VANILLA_POWER_MAP
+
+
+# Vanilla powers with non-standard constructors.
+# Most vanilla powers use (AbstractCreature owner, int amount).
+# These are the exceptions:
+#   "is_source_monster" → (owner, amount, boolean isSourceMonster) — use false for player
+#   "with_source"       → (owner, AbstractCreature source, amount)
+VANILLA_POWER_CONSTRUCTOR: dict[str, str] = {
+    "Vulnerable": "is_source_monster",
+    "Weak": "is_source_monster",
+    "Frail": "is_source_monster",
+    "Poison": "with_source",
+}
+
+
+def get_vanilla_constructor_pattern(status_name: str) -> str:
+    """Return the constructor pattern for a vanilla power.
+
+    Returns "standard" (2-arg), "is_source_monster" (3-arg with bool),
+    or "with_source" (3-arg with source creature).
+    """
+    return VANILLA_POWER_CONSTRUCTOR.get(status_name, "standard")

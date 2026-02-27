@@ -5,7 +5,8 @@ from __future__ import annotations
 from sts_gen.ir.relics import RelicDefinition, RelicTier
 
 from .actions import ActionTranspiler, TranspileContext
-from .naming import to_image_path, to_relic_class_name, to_sts_id
+from .naming import to_image_path, to_power_class_name, to_relic_class_name, to_sts_id
+from .vanilla_powers import is_vanilla_status
 
 
 # Relic trigger → Java method name
@@ -83,6 +84,15 @@ class RelicTranspiler:
 
         tier = _TIER_MAP.get(relic.tier, "COMMON")
 
+        # Collect custom power imports
+        from .cards import _collect_custom_power_refs
+
+        custom_refs = _collect_custom_power_refs(relic.actions)
+        pkg = f"sts_gen.{self.mod_id.lower()}"
+        extra_imports = [
+            f"{pkg}.powers.{to_power_class_name(ref)}" for ref in sorted(custom_refs)
+        ]
+
         return {
             "class_name": class_name,
             "sts_id": sts_id,
@@ -95,5 +105,6 @@ class RelicTranspiler:
             "counter_config": counter_config,
             "description": relic.description,
             "name": relic.name,
-            "package_path": f"sts_gen.{self.mod_id.lower()}",
+            "package_path": pkg,
+            "extra_imports": extra_imports,
         }

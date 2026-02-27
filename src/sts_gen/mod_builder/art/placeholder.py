@@ -172,6 +172,12 @@ class PlaceholderArtGenerator:
         portrait.save(portrait_path)
         created.append(portrait_path)
 
+        # Main character image (in-game sprite)
+        main = _create_placeholder(256, 256, (150, 50, 50), self.cs.mod_name[:6])
+        main_path = char_dir / "main.png"
+        main.save(main_path)
+        created.append(main_path)
+
         # Shoulder images
         for name in ("shoulder.png", "shoulder2.png"):
             img = _create_placeholder(128, 128, (100, 40, 40), "")

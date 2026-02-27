@@ -75,7 +75,7 @@ class TestRelicTemplate:
         template = jinja_env.get_template("Relic.java.j2")
         java = template.render(**ctx)
 
-        assert "public class BurningBlood extends AbstractRelic" in java
+        assert "public class BurningBlood extends CustomRelic" in java
         assert "RelicTier.STARTER" in java
         assert "HealAction" in java
         assert "onVictory" in java

@@ -13,13 +13,13 @@ _TRIGGER_METHOD_MAP: dict[StatusTrigger, str] = {
     StatusTrigger.ON_TURN_START: "atStartOfTurn",
     StatusTrigger.ON_TURN_END: "atEndOfTurn",
     StatusTrigger.ON_ATTACK: "onAttack",
-    StatusTrigger.ON_ATTACKED: "wasHPLostThisTurn",
+    StatusTrigger.ON_ATTACKED: "wasHPLost",
     StatusTrigger.ON_CARD_PLAYED: "onAfterUseCard",
     StatusTrigger.ON_CARD_DRAWN: "onCardDraw",
     StatusTrigger.ON_CARD_EXHAUSTED: "onExhaust",
     StatusTrigger.ON_ATTACK_PLAYED: "onAfterUseCard",
     StatusTrigger.ON_BLOCK_GAINED: "onGainedBlock",
-    StatusTrigger.ON_HP_LOSS: "wasHPLostThisTurn",
+    StatusTrigger.ON_HP_LOSS: "wasHPLost",
     StatusTrigger.ON_DEATH: "onDeath",
 }
 

@@ -6,7 +6,8 @@ from sts_gen.ir.cards import CardTarget
 from sts_gen.ir.potions import PotionDefinition, PotionRarity
 
 from .actions import ActionTranspiler, TranspileContext
-from .naming import to_image_path, to_potion_class_name, to_sts_id
+from .naming import to_image_path, to_potion_class_name, to_power_class_name, to_sts_id
+from .vanilla_powers import is_vanilla_status
 
 _RARITY_MAP: dict[PotionRarity, str] = {
     PotionRarity.COMMON: "COMMON",
@@ -59,6 +60,15 @@ class PotionTranspiler:
         rarity = _RARITY_MAP.get(potion.rarity, "COMMON")
         size = _SIZE_MAP.get(potion.target.value, "BOTTLE")
 
+        # Collect custom power imports
+        from .cards import _collect_custom_power_refs
+
+        custom_refs = _collect_custom_power_refs(potion.actions)
+        pkg = f"sts_gen.{self.mod_id.lower()}"
+        extra_imports = [
+            f"{pkg}.powers.{to_power_class_name(ref)}" for ref in sorted(custom_refs)
+        ]
+
         return {
             "class_name": class_name,
             "sts_id": sts_id,
@@ -69,5 +79,6 @@ class PotionTranspiler:
             "action_body": action_body,
             "description": potion.description,
             "name": potion.name,
-            "package_path": f"sts_gen.{self.mod_id.lower()}",
+            "package_path": pkg,
+            "extra_imports": extra_imports,
         }

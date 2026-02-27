@@ -116,6 +116,11 @@ public class {{ class_name }} extends AbstractCard {
 {% endif %}
 
     @Override
+    public AbstractCard makeCopy() {
+        return new {{ class_name }}();
+    }
+
+    @Override
     public void upgrade() {
         if (!this.upgraded) {
             this.upgradeName();

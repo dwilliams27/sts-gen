@@ -15,6 +15,7 @@ from sts_gen.ir.actions import ActionNode, ActionType
 from .naming import to_class_name, to_power_class_name
 from .vanilla_powers import (
     VANILLA_POWER_MAP,
+    get_vanilla_constructor_pattern,
     get_vanilla_power_class,
     get_vanilla_power_id,
     is_vanilla_status,
@@ -110,12 +111,54 @@ class ActionTranspiler:
             lines.append(self._transpile_node(node, ctx))
         return "\n".join(lines)
 
+    # Action types that handle all_enemies natively (don't wrap)
+    _NATIVE_ALL_ENEMIES: set[ActionType] = {
+        ActionType.DEAL_DAMAGE,  # uses DamageAllEnemiesAction / own loop
+        ActionType.FOR_EACH,     # already a loop construct
+    }
+
     def _transpile_node(self, node: ActionNode, ctx: TranspileContext) -> str:
         """Dispatch a single node to its handler."""
         handler = self._dispatch.get(node.action_type)
         if handler is None:
             return f"{ctx.indent_str()}// UNSUPPORTED: {node.action_type.value}"
+
+        # Generic all_enemies wrapping for handlers that don't support it natively
+        if (
+            self._is_all_enemies(node)
+            and node.action_type not in self._NATIVE_ALL_ENEMIES
+        ):
+            return self._wrap_all_enemies(node, ctx, handler)
+
         return handler(node, ctx)
+
+    def _wrap_all_enemies(
+        self,
+        node: ActionNode,
+        ctx: TranspileContext,
+        handler: "_Handler",
+    ) -> str:
+        """Wrap an action in a for-each-monster loop for all_enemies targeting."""
+        ind = ctx.indent_str()
+        inner_ctx = TranspileContext(
+            source_var=ctx.source_var,
+            target_var="mo",
+            is_power=ctx.is_power,
+            is_relic=ctx.is_relic,
+            indent=ctx.indent + 2,
+            status_id_map=ctx.status_id_map,
+            mod_id=ctx.mod_id,
+        )
+        # Redirect the node's target so _resolve_target returns "mo" not "null"
+        redirected = node.model_copy(update={"target": "enemy"})
+        body = handler(redirected, inner_ctx)
+        return (
+            f"{ind}for (AbstractMonster mo : AbstractDungeon.getCurrRoom().monsters.monsters) {{\n"
+            f"{ind}    if (!mo.isDeadOrEscaped()) {{\n"
+            f"{body}\n"
+            f"{ind}    }}\n"
+            f"{ind}}}"
+        )
 
     # -- Target resolution ---------------------------------------------------
 
@@ -273,10 +316,20 @@ class ActionTranspiler:
 
         power_class = self._power_class(status, ctx)
 
-        # Determine if we need "new FQClass(target, N)" or "new SimpleClass(target, N)"
+        # Constructor varies by power type
         if is_vanilla_status(status):
-            constructor = f"new {power_class}({target}, {value})"
+            pattern = get_vanilla_constructor_pattern(status)
+            if pattern == "is_source_monster":
+                # VulnerablePower, WeakPower, FrailPower: (owner, amount, isSourceMonster)
+                constructor = f"new {power_class}({target}, {value}, false)"
+            elif pattern == "with_source":
+                # PoisonPower: (owner, source, amount)
+                constructor = f"new {power_class}({target}, {src}, {value})"
+            else:
+                # Standard 2-arg: (owner, amount)
+                constructor = f"new {power_class}({target}, {value})"
         else:
+            # Custom power: (owner, source, amount)
             constructor = f"new {power_class}({target}, {src}, {value})"
 
         return f"{ind}addToBot(new ApplyPowerAction({target}, {src}, {constructor}, {value}));"
